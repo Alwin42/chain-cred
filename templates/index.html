@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>CredChain Demo</title>
+</head>
+<body>
+  <h2>CredChain (Demo)</h2>
+  <button id="connect">Connect MetaMask</button>
+  <div id="addr"></div>
+
+  <h3>Verify Identity (GitHub/LinkedIn)</h3>
+  <input id="profile" placeholder="https://github.com/username"/>
+  <button id="verify">Verify</button>
+
+  <h3>Submit Project</h3>
+  <input id="proj" placeholder="https://raw.githubusercontent.com/..."/>
+  <button id="submit">Submit Project</button>
+
+<script>
+let account;
+document.getElementById('connect').onclick = async () => {
+  if (window.ethereum) {
+    const accs = await ethereum.request({ method: 'eth_requestAccounts' });
+    account = accs[0];
+    document.getElementById('addr').innerText = 'Connected: ' + account;
+  } else {
+    alert('Install MetaMask');
+  }
+};
+
+document.getElementById('verify').onclick = async () => {
+  if (!account) return alert('Connect first');
+  const profile = document.getElementById('profile').value;
+  const res = await fetch('http://localhost:5000/verify_user', {
+    method:'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({wallet: account, profile_link: profile})
+  });
+  const data = await res.json();
+  alert(JSON.stringify(data));
+};
+
+document.getElementById('submit').onclick = async () => {
+  if (!account) return alert('Connect first');
+  const link = document.getElementById('proj').value;
+  const res = await fetch('http://localhost:5000/submit_project', {
+    method:'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({wallet: account, link})
+  });
+  const data = await res.json();
+  alert(JSON.stringify(data));
+};
+</script>
+</body>
+</html>

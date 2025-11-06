@@ -7,7 +7,7 @@ install_solc("0.8.17")
 
 load_dotenv()
 MYADDRESS = Web3.to_checksum_address(os.getenv("METAMASK"))
-SECRETCODE = os.getenv("METAMASK_SECRETKEY")
+SECRETCODE = os.getenv("SECRETKEY")
 
 #Read the Smart Contract
 with open("./CredChain.sol","r") as file:

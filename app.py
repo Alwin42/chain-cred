@@ -7,10 +7,16 @@ from web3 import Web3
 
 load_dotenv()
 MYADDRESS = Web3.to_checksum_address(os.getenv("METAMASK"))
-SECRETCODE = os.getenv("METAMASK_SECRETKEY")
+SECRETCODE = os.getenv("SECRETKEY")
 
 w3 = Web3(Web3.HTTPProvider("https://rpc.api.moonbase.moonbeam.network"))
 chainid=1287
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return render_template('index.html')
 
 def callfeature(transactionreceipt,abi):
     balance = w3.eth.get_balance(MYADDRESS)
@@ -35,4 +41,3 @@ def callfeature(transactionreceipt,abi):
 
     verifyaddress_transactionreceipt=w3.eth.wait_for_transaction_receipt(verifyaddress_transactionhash)   #fetch the transaction receipt
 
-app = Flask(__name__)
