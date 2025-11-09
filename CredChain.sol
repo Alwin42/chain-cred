@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "./node_modules/@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "./node_modules/@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 
 contract CredChain is ERC721URIStorage, Ownable {
@@ -19,6 +19,9 @@ contract CredChain is ERC721URIStorage, Ownable {
         string commentHash; // could be IPFS
     }
 
+    mapping(string => bool) private _verifiedProjects;// Tracks if a project (by its projectHash) has been verified.
+    mapping(address => mapping(string => bool)) private _hasReviewed;    // Tracks if a (reviewer, projectHash) pair has already submitted a review.
+
     mapping(address => bool) public verifiedUsers;
     mapping(address => Project[]) public userProjects;
     mapping(address => Review[]) public userReviews;
@@ -28,10 +31,10 @@ contract CredChain is ERC721URIStorage, Ownable {
 
     event UserVerified(address indexed user, bool status);
     event ProjectAdded(address indexed user, uint index, string projectHash, string link);
-    event ProjectVerified(address indexed user, uint index, bool status);
+    event ProjectVerified(address indexed user, uint index, string projectHash); 
     event ReviewAdded(address indexed freelancer, address indexed reviewer, uint8 rating);
 
-  constructor() ERC721("CredChainBadge", "CCB") Ownable() {
+  constructor() ERC721("CredChainBadge", "CCB") Ownable(msg.sender) {
     tokenCounter = 1;
     }
 
@@ -52,19 +55,44 @@ contract CredChain is ERC721URIStorage, Ownable {
     // Backend (verifier) sets project verified flag
     function verifyProject(address user, uint index, bool status) external onlyOwner {
         require(index < userProjects[user].length, "Invalid index");
+        
         Project storage p = userProjects[user][index];
+        
+        // --- Duplicate Check: Project Verification ---
+        require(!_verifiedProjects[p.projectHash], "Project already verified");
+
         p.verified = status;
+        
         if (status) {
+            // Mark project hash as verified universally
+            _verifiedProjects[p.projectHash] = true; 
+            
             projectCount[user] += 1;
             _checkAndMintBadge(user);
         }
-        emit ProjectVerified(user, index, status);
+        // NOTE: If we allow 'status=false' calls, we should decide if it should clear _verifiedProjects
+        // For simplicity and preventing double-counting, we only set 'true' and don't allow un-verification.
+        
+        emit ProjectVerified(user, index, p.projectHash);
     }
 
     // Clients (verified) submit reviews; reviewer must be verified user
-    function submitReview(address freelancer, uint8 rating, string calldata commentHash) external {
+    function submitReview(address freelancer, string calldata projectHash, uint8 rating, string calldata commentHash) external {
+        // We now require the projectHash to check verification and duplicate reviews
         require(verifiedUsers[msg.sender], "Reviewer not verified");
+        
+        // --- Duplicate Check: Project Verification ---
+        require(_verifiedProjects[projectHash], "Project not verified");
+        
+        // --- Duplicate Check: Reviewer already reviewed this project ---
+        require(!_hasReviewed[msg.sender][projectHash], "Reviewer already reviewed this project");
+
+        // Record the review
         userReviews[freelancer].push(Review(msg.sender, rating, commentHash));
+        
+        // Mark the (reviewer, projectHash) pair as reviewed
+        _hasReviewed[msg.sender][projectHash] = true;
+        
         emit ReviewAdded(freelancer, msg.sender, rating);
     }
 
@@ -92,7 +120,7 @@ contract CredChain is ERC721URIStorage, Ownable {
 
     // Configure URIs for milestones (dev: replace IPFS with real URIs)
     function _getBadgeURI(uint256 milestone) internal pure returns (string memory) {
-        if (milestone == 3) return "ipfs://QmBadge3";
+        if (milestone == 3) return "ipfs://bafybeia7z2tn7uk7dsimsp3mfgnmrveocbirll7msiczyf6k2kbod7zpoa"; //Tried adding the IPFS link here !!!
         if (milestone == 5) return "ipfs://QmBadge5";
         if (milestone == 7) return "ipfs://QmBadge7";
         if (milestone == 10) return "ipfs://QmBadge10";
