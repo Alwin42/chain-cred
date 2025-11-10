@@ -4,6 +4,7 @@ pragma solidity ^0.8.17;
 import "./node_modules/@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "./node_modules/@openzeppelin/contracts/access/Ownable.sol";
 
+
 contract CredChain is ERC721URIStorage, Ownable {
     struct Project {
         address client;
@@ -17,7 +18,6 @@ contract CredChain is ERC721URIStorage, Ownable {
         address reviewer;
         uint projectIndex;  // link to userProjects[user][index]
         uint8 rating;
-        string commentHash;
         string commentHash;
     }
 
@@ -82,17 +82,7 @@ contract CredChain is ERC721URIStorage, Ownable {
 
     // Clients (verified) submit reviews; reviewer must be verified user
     function submitReview(address freelancer,uint projectIndex,uint8 rating,string calldata commentHash) external {
-    function submitReview(address freelancer,uint projectIndex,uint8 rating,string calldata commentHash) external {
         require(verifiedUsers[msg.sender], "Reviewer not verified");
-        require(projectIndex < userProjects[freelancer].length, "Invalid project index");
-
-        Project storage p = userProjects[freelancer][projectIndex];
-        require(p.client == msg.sender, "Not authorized to review this project");
-
-        userReviews[freelancer].push(
-            Review(msg.sender, projectIndex, rating, commentHash)
-        );
-
         require(projectIndex < userProjects[freelancer].length, "Invalid project index");
 
         Project storage p = userProjects[freelancer][projectIndex];
