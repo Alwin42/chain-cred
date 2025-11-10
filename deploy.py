@@ -53,11 +53,14 @@ def depoly_contract():
     #fetching nonce(latest transaction) of our wallet
     nonce=w3.eth.get_transaction_count(MYADDRESS,"pending")
 
+    gas_estimate = CredChain.constructor().estimate_gas({"from": MYADDRESS})
+    print("Gas estimate:", gas_estimate)
+    
     transaction = CredChain.constructor().build_transaction({
         "chainId": chainid,
         "from": MYADDRESS,
         "nonce": nonce,
-        "gas": 7000000,
+        "gas": gas_estimate + 300000,   # small buffer,
         "gasPrice": w3.to_wei("20", "gwei")
     })
 
@@ -70,10 +73,13 @@ def depoly_contract():
     transactionreceipt=w3.eth.wait_for_transaction_receipt(transactionhash)
     print("Contract Deployed")
     print("Transction Receipt: ",transactionreceipt)
+    if transactionreceipt["status"] == 0:
+        print("❌ Deployment failed. Check constructor or imports.")
+    else:
+        print("✅ Deployment successful!")
     address=transactionreceipt.contractAddress
     print("Smart Contract Address: ",address)
     return address,abi
-
 
 
 if __name__ == "__main__":

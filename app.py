@@ -21,22 +21,28 @@ CORS(app)
 
 @app.route('/')
 def home():
-    return render_template('home.html')
+    return render_template('index.html')
 
+@app.route('/client')
+def clientpage():
+    return render_template('client.html')
+
+#-----------------------------------------------------------SMART CONTRACT DEPLOYMENT-----------------------------------------------------------
 def deploysmartcontract():                                  #deployment function call
-    '''contractaddress,abi=depoly_contract()'''              
+    print("Contract Deployment Function Triggered")
+    '''contractaddress,abi=depoly_contract()    '''         
     global contract
 
     with open("./compiledcccode.json","r") as file:
         compiledsol = json.load(file) 
     abi=compiledsol["contracts"]["chaincred.sol"]["CredChain"]["abi"]
-    contract=w3.eth.contract(address="0x8c1Ba02d545805aAaE3Fd7Cd33F5312349491186", abi=abi)
+    contract=w3.eth.contract(address="0xa1450595DB224Db098c1324388bf541ad725E1Ea", abi=abi)
     
     '''global contract
     contract='0x7B87314c1975ba20ff93b931f3aEA7779098fA13'   '''
 
+#-----------------------------------------------------------JSON FILES-----------------------------------------------------------
 BUILDERS_FILE = "builders.json"
-
 def load_builders():
     global KNOWN_BUILDERS
     if os.path.exists(BUILDERS_FILE):
@@ -48,7 +54,6 @@ def load_builders():
 def save_builders():
     with open(BUILDERS_FILE, "w") as f:
         json.dump(list(KNOWN_BUILDERS), f)
-
 load_builders()
 
 
@@ -68,7 +73,7 @@ def save_pending():
 
 #-----------------------------------------------------------CALL FUNCTIONS-----------------------------------------------------------
 def callfeature(feature):
-    print("Call Recieved!!")
+    print("Function Call Recieved!!")
     balance = w3.eth.get_balance(MYADDRESS)
     print("Balance:", w3.from_wei(balance, "ether"), "DEV")
 
@@ -98,7 +103,7 @@ def owner_account():
 #-----------------------------------------------------------VERIFY USER-----------------------------------------------------------
 @app.route("/verify_user", methods=["POST"])
 def verify_user():
-    print("Button Clicked")
+    print("User Verification Function Triggered")
     """
     Request JSON:
     { "wallet": "0x..", "profile_link": "https://github.com/..." }
@@ -122,7 +127,7 @@ def verify_user():
 
     # mark verified on-chain
     try:
-        setverified = contract.functions.setUserVerified(MYADDRESS, True)
+        setverified = contract.functions.setUserVerified(Web3.to_checksum_address(wallet), True)
         receipt = callfeature(setverified)
         print("Github user verification: ",receipt)
         return jsonify({"verified": True, "tx": receipt.transactionHash.hex()})
@@ -132,6 +137,7 @@ def verify_user():
 #-----------------------------------------------------------ADD PROJECT-----------------------------------------------------------
 @app.route("/submit_project", methods=["POST"])
 def submit_project():
+    print("Submit Project Function Triggered")
     """
     JSON:
     { "wallet":"0x..", "link":"https://raw.githubusercontent.com/.. or https://github.com/.. " }
@@ -186,8 +192,10 @@ def submit_project():
 #-----------------------------------------------------------VERIFY PROJECT-----------------------------------------------------------
 @app.route("/run_verify_pending", methods=["POST"])
 def run_verify_pending():
+    print("Project Verification Function Triggered")
     load_pending()  # Load current pending list
     print("Current pending projects:", PENDING_PROJECTS)
+    print("\n")
 
     results = []
     to_remove = []
@@ -236,7 +244,7 @@ def mint_manual():
     if not wallet or not uri:
         return jsonify({"error":"wallet and uri required"}), 400
     try:
-        fn = contract.functions.mintBadge(Web3.to_checksum_address(wallet), uri)
+        fn = contract.functions.checkAndMintBadge(Web3.to_checksum_address(wallet))
         receipt = callfeature(fn)
         return jsonify({"tx": receipt.transactionHash.hex()})
     except Exception as e:
@@ -267,17 +275,62 @@ def get_projects_for_client(wallet):
 def submit_review():
     data = request.get_json()
     freelancer = data.get("freelancer")
+    project_index = int(data.get("project_index"))
     rating = int(data.get("rating"))
     comment_hash = data.get("comment_hash")  # optional IPFS comment link
 
+    deploysmartcontract()
+
     fn = contract.functions.submitReview(
         Web3.to_checksum_address(freelancer),
+        project_index,
         rating,
         comment_hash
     )
     receipt = callfeature(fn)
     return jsonify({"tx": receipt.transactionHash.hex()})
 
+#-----------------------------------------------------------GET PROJECT WITH REVIEWS-----------------------------------------------------------
+@app.route("/get_project_with_reviews", methods=["GET"])
+def get_project_with_reviews():
+    builder = request.args.get("builder")
+    index = request.args.get("index", type=int)
+
+    if not builder or index is None:
+        return jsonify({"error": "builder and index query params required"}), 400
+
+    try:
+        deploysmartcontract()
+        result = contract.functions.getProjectWithReviews(Web3.to_checksum_address(builder), index).call()
+
+        client = result[0]
+        project_hash = result[1]
+        link = result[2]
+        verified = result[3]
+        reviews = result[4]
+
+        formatted_reviews = [
+            {
+                "reviewer": r[0],
+                "projectIndex": r[1],
+                "rating": r[2],
+                "commentHash": r[3]
+            }
+            for r in reviews
+        ]
+
+        return jsonify({
+            "builder": builder,
+            "index": index,
+            "client": client,
+            "projectHash": project_hash,
+            "link": link,
+            "verified": verified,
+            "reviews": formatted_reviews
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__=="__main__":
     app.run(debug=True)
