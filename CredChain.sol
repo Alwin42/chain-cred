@@ -53,7 +53,7 @@ contract CredChain is ERC721URIStorage, Ownable {
         address client,
         string calldata projectHash,
         string calldata link
-    ) external onlyOwner {
+    ) external  {
         require(verifiedUsers[user], "User not verified");
         require(!_projectHashExists[projectHash], "Project hash already exists");
 

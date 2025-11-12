@@ -30,13 +30,13 @@ def clientpage():
 #-----------------------------------------------------------SMART CONTRACT DEPLOYMENT-----------------------------------------------------------
 def deploysmartcontract():                                  #deployment function call
     print("Contract Deployment Function Triggered")
-    '''contractaddress,abi=depoly_contract()    '''         
+    '''contractaddress,abi=depoly_contract()'''      
     global contract
 
     with open("./compiledcccode.json","r") as file:
         compiledsol = json.load(file) 
     abi=compiledsol["contracts"]["chaincred.sol"]["CredChain"]["abi"]
-    contract=w3.eth.contract(address="0xa1450595DB224Db098c1324388bf541ad725E1Ea", abi=abi)
+    contract=w3.eth.contract(address='0xC7C0851104bBfeDBa3E3a370fE051dACA2686B6F', abi=abi)
     
     '''global contract
     contract='0x7B87314c1975ba20ff93b931f3aEA7779098fA13'   '''
@@ -119,7 +119,7 @@ def verify_user():
 
     # Quick validation: link reachable (simple MVP)
     try:
-        r = requests.get(link, timeout=8)
+        r = requests.get(link, timeout=10, headers={"User-Agent": "CredChainVerifier/1.0"})
         if r.status_code != 200:
             return jsonify({"verified": False, "reason": "profile link unreachable"}), 400
     except Exception as e:

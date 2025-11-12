@@ -1,0 +1,113 @@
+{% extends "main.html" %}
+
+{% block title %}Hire - Chain-Cred{% endblock %}
+
+{% block content %}
+
+<div class="container mx-auto px-6 py-16 max-w-6xl">
+
+    <h1 class="text-5xl font-extrabold text-light mb-12 text-center">
+        Post Jobs & Find Freelancers
+    </h1>
+
+    <div class="bg-gray-3
+    00 text-gray-900 p-8 md:p-12 rounded-2xl shadow-2xl mb-16">
+        <h2 class="text-3xl font-bold text-primary-dark mb-8">Post a New Job</h2>
+        
+        <form action="#" method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="md:col-span-2">
+                <label for="job-title" class="block text-sm font-semibold text-gray-700 mb-2">Job Title</label>
+                <input type="text" id="job-title" placeholder="e.g., Senior Smart Contract Developer" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent">
+            </div>
+
+            <div class="md:col-span-2">
+                <label for="skills" class="block text-sm font-semibold text-gray-700 mb-2">Skills Required</label>
+                <input type="text" id="skills" placeholder="e.g., Solidity, Hardhat, Ethers.js, TheGraph" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="budget" class="block text-sm font-semibold text-gray-700 mb-2">Budget</label>
+                    <input type="number" id="budget" placeholder="1000" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent">
+                </div>
+                <div>
+                    <label for="currency" class="block text-sm font-semibold text-gray-700 mb-2">Currency</label>
+                    <select id="currency" class="w-full p-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-accent">
+                        <option>USDC</option>
+                        <option>ETH</option>
+                        <option>DAI</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label for="payment-terms" class="block text-sm font-semibold text-gray-700 mb-2">Payment Terms</label>
+                <select id="payment-terms" class="w-full p-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-accent">
+                    <option>Milestone-Based Escrow</option>
+                    <option>Full Payment on Completion</option>
+                </select>
+            </div>
+
+            <div class="md:col-span-2">
+                <label for="description" class="block text-sm font-semibold text-gray-700 mb-2">Job Description</label>
+                <textarea id="description" rows="6" placeholder="Describe the project, deliverables, and expectations..." class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent"></textarea>
+            </div>
+
+            <div class="md:col-span-2 text-right">
+                <button type="submit" class="bg-primary text-light font-bold py-3 px-8 rounded-lg text-lg hover:bg-opacity-90 transition inline-flex items-center space-x-2">
+                    <span>Post Job</span>
+                    <ion-icon name="send-outline"></ion-icon>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div>
+        <h2 class="text-3xl font-bold text-light mb-8 text-center">Or Find Freelancers Directly</h2>
+
+        <div class="flex flex-col md:flex-row gap-4 mb-10">
+            <input type="text" placeholder="Search by skill (e.g., Solidity, React, Subgraphs)" class="flex-grow p-4 bg-primary text-light placeholder-light-muted rounded-lg focus:ring-2 focus:ring-accent border-none">
+            <button class="bg-accent text-light font-semibold py-4 px-8 rounded-lg hover:bg-opacity-90 transition">
+                Search
+            </button>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-8">
+            <div class="bg-primary p-6 rounded-lg shadow-lg text-center">
+                <img src="https://static.vecteezy.com/system/resources/thumbnails/009/734/564/small/default-avatar-profile-icon-of-social-media-user-vector.jpg" alt="Freelancer Avatar" class="w-24 h-24 rounded-full mx-auto mb-4 border-4 border-accent">
+                <h3 class ="text-2xl font-bold text-light">Alice </h3>
+                <p class="text-light-muted mb-4">Smart Contract Auditor</p>
+                <div class="flex justify-center space-x-2 mb-4">
+                    <span class="bg-accent text-xs font-semibold px-3 py-1 rounded-full">Solidity Lvl. 5</span>
+                    <span class="bg-accent text-xs font-semibold px-3 py-1 rounded-full">Audit Verified</span>
+                </div>
+                <a href="#" class="text-light font-bold hover:underline">View Profile</a>
+            </div>
+
+            <div class="bg-primary p-6 rounded-lg shadow-lg text-center">
+                <img src="https://static.vecteezy.com/system/resources/thumbnails/009/734/564/small/default-avatar-profile-icon-of-social-media-user-vector.jpg" alt="Freelancer Avatar" class="w-24 h-24 rounded-full mx-auto mb-4 border-4 border-accent">
+                <h3 class="text-2xl font-semibold text-light">Bob </h3>
+                <p class="text-light-muted mb-4">dApp & Frontend Developer</p>
+                <div class="flex justify-center space-x-2 mb-4">
+                    <span class="bg-accent text-xs font-semibold px-3 py-1 rounded-full">React</span>
+                    <span class="bg-accent text-xs font-semibold px-3 py-1 rounded-full">Ethers.js</span>
+                </div>
+                <a href="#" class="text-light font-bold hover:underline">View Profile</a>
+            </div>
+
+            <div class="bg-primary p-6 rounded-lg shadow-lg text-center">
+                <img src="https://static.vecteezy.com/system/resources/thumbnails/009/734/564/small/default-avatar-profile-icon-of-social-media-user-vector.jpg" alt="Freelancer Avatar" class="w-24 h-24 rounded-full mx-auto mb-4 border-4 border-accent">
+                <h3 class="text-2xl font-semibold text-light">Carol </h3>
+                <p class="text-light-muted mb-4">Web3 UI/UX Designer</p>
+                <div class="flex justify-center space-x-2 mb-4">
+                    <span class="bg-accent text-xs font-semibold px-3 py-1 rounded-full">Figma</span>
+                    <span class="bg-accent text-xs font-semibold px-3 py-1 rounded-full">User Research</span>
+                </div>
+                <a href="#" class="text-light font-bold hover:underline">View Profile</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
