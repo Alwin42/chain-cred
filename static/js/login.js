@@ -1,39 +1,43 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Select all the elements we need
+
+    // --- 1. Select All Elements ---
     const roleRadios = document.querySelectorAll('input[name="role"]');
     const employerForm = document.getElementById('employerForm');
-    
-    // Updated selectors for the new freelancer structure
-    const freelancerSection = document.getElementById('freelancerSection'); // The new wrapper
-    const freelancerForm = document.getElementById('freelancerForm');     // The div with just the form fields
-    
+    const freelancerSection = document.getElementById('freelancerSection');
+    const freelancerForm = document.getElementById('freelancerForm');
     const connectWalletBtn = document.getElementById('connectWalletBtn');
     const loginForm = document.getElementById('loginForm');
-
-    // New selectors for GitHub Verification
-    const verify= document.getElementById('verify');
+    const verify = document.getElementById('verify');
     const profileLinkInput = document.getElementById('profileLink');
 
+    // --- 2. Page-Level Variable ---
+    // This will store the user's wallet address after they connect
+    let account;
+
+    // --- 3. Helper Functions ---
+
     /**
-     * Get all required input fields for a given form section.
+     * Gets all required input fields from a specific form section.
      */
     function getRequiredInputs(formSection) {
+        if (!formSection) return [];
         return formSection.querySelectorAll('input[required], select[required], textarea[required]');
     }
 
     /**
-     * Check if all required fields are filled for the active form.
+     * Checks if all required fields in the *visible* form are filled.
+     * This enables/disables the "Connect Wallet" button.
      */
     function checkFormValidity() {
         let currentFormInputs;
-        
-        // Check which form is active by seeing which one is NOT hidden
-        if (!employerForm.classList.contains('hidden')) {
-            // Employer form is active
+
+        // Check which form is active
+        if (employerForm && !employerForm.classList.contains('hidden')) {
             currentFormInputs = getRequiredInputs(employerForm);
-        } else {
-            // Freelancer form is active
+        } else if (freelancerForm && !freelancerSection.classList.contains('hidden')) {
             currentFormInputs = getRequiredInputs(freelancerForm);
+        } else {
+            currentFormInputs = [];
         }
 
         let allFieldsFilled = true;
@@ -42,92 +46,84 @@ document.addEventListener('DOMContentLoaded', () => {
                 allFieldsFilled = false;
             }
         });
-        
+
         // Enable/disable the Connect Wallet button
-        connectWalletBtn.disabled = !allFieldsFilled;
+        if (connectWalletBtn) {
+            connectWalletBtn.disabled = !allFieldsFilled;
+        }
     }
 
+    // --- 4. Event Listeners ---
+
     /**
-     * Event listener for role selection.
+     * Event listener for role selection (Employer/Freelancer).
+     * This toggles which form is visible and which fields are 'required'.
      */
     roleRadios.forEach(radio => {
-    radio.addEventListener('change', (event) => {
-        const employerInputs = employerForm.querySelectorAll('input[required], select[required]');
-        const freelancerInputs = freelancerForm.querySelectorAll('input[required], select[required]');
+        radio.addEventListener('change', (event) => {
+            const employerInputs = getRequiredInputs(employerForm);
+            const freelancerInputs = getRequiredInputs(freelancerForm);
 
-        if (event.target.value === 'employer') {
-                    employerForm.classList.remove('hidden');
-                    freelancerSection.classList.add('hidden');
+            if (event.target.value === 'employer') {
+                employerForm.classList.remove('hidden');
+                freelancerSection.classList.add('hidden');
 
-                    // Make employer fields required, and freelancer fields not required
-                    employerInputs.forEach(input => input.required = true);
-                    freelancerInputs.forEach(input => input.required = false);
+                // Make employer fields required, and freelancer fields not required
+                employerInputs.forEach(input => input.required = true);
+                freelancerInputs.forEach(input => input.required = false);
 
-                } else {
-                    freelancerSection.classList.remove('hidden');
-                    employerForm.classList.add('hidden');
+            } else {
+                freelancerSection.classList.remove('hidden');
+                employerForm.classList.add('hidden');
 
-                    // Make freelancer fields required, and employer fields not required
-                    employerInputs.forEach(input => input.required = false);
-                    freelancerInputs.forEach(input => input.required = true);
-                }
-                // Re-check validity when form switches
-                checkFormValidity();
-            });
+                // Make freelancer fields required, and employer fields not required
+                employerInputs.forEach(input => input.required = false);
+                freelancerInputs.forEach(input => input.required = true);
+            }
+            // Re-check validity when form switches
+            checkFormValidity();
         });
-
-// Also, run this logic once on page load to set the initial state
-document.querySelector('input[name="role"]:checked').dispatchEvent(new Event('change'));
-
-    // Add event listeners to all input fields for real-time validation
-    loginForm.addEventListener('input', checkFormValidity);
-
-    // Initial check on page load (for the default selected role)
-    checkFormValidity();
+    });
 
     /**
-     * Event listener for Connect Wallet button.
+     * Event listener for real-time validation as the user types.
      */
-    // AFTER
-// --- Global variable to store the connected account ---
-let account;
-
-/**
- * Event listener for Connect Wallet button.
- */
-connectWalletBtn.addEventListener('click', async () => {
-    if (!window.connectWallet) {
-        alert("Error: credchain.js module not loaded");
-        return;
+    if (loginForm) {
+        loginForm.addEventListener('input', checkFormValidity);
     }
-
-    try {
-        // Call the function from credchain.js
-        const addr = await window.connectWallet();
-        account = addr; // Save the account for later
-        
-        console.log("Wallet connected:", account);
-        
-        // Update the UI
-        connectWalletBtn.textContent = "Wallet Connected!";
-        connectWalletBtn.style.backgroundColor = '#059669'; // Green color
-        
-        // You could also display the address
-        // document.getElementById('walletAddressDisplay').innerText = "Connected: " + account;
-
-    } catch (e) {
-        console.error("connect error:", e);
-        alert("Connection failed: " + e.message);
-        connectWalletBtn.textContent = "Connection Failed";
-        connectWalletBtn.style.backgroundColor = '#DC2626'; // Red color
-    }
-});
-
-
-// ... inside the document.addEventListener('DOMContentLoaded', () => { ... })
 
     /**
-     * Event listener for the GitHub Verify button.
+     * Event listener for the "Connect Wallet" button.
+     */
+    if (connectWalletBtn) {
+        connectWalletBtn.addEventListener('click', async () => {
+            if (!window.connectWallet) {
+                alert("Error: credchain.js module not loaded");
+                return;
+            }
+
+            try {
+                // Call the connectWallet function from credchain.js
+                const addr = await window.connectWallet();
+                account = addr; // Save the account for use in "Verify" and "Login"
+                
+                console.log("Wallet connected:", account);
+                
+                // Update the UI
+                connectWalletBtn.textContent = "Wallet Connected!";
+                connectWalletBtn.style.backgroundColor = '#059669'; // Green color
+
+            } catch (e) {
+                console.error("connect error:", e);
+                alert("Connection failed: " + e.message);
+                connectWalletBtn.textContent = "Connection Failed";
+                connectWalletBtn.style.backgroundColor = '#DC2626'; // Red color
+            }
+        });
+    }
+
+    /**
+     * Event listener for the GitHub "Verify" button.
      */
     if (verify) {
         verify.addEventListener('click', async () => {
@@ -174,89 +170,88 @@ connectWalletBtn.addEventListener('click', async () => {
             }
         });
     } else {
-        console.log("Verify button not found on this page.");
+        // This is normal if the verify button isn't on the page (e.g., employer form)
+        console.log("Verify button not found (this is OK if employer is selected).");
     }
-
-// ... rest of your login.js
 
     /**
-     * Event listener for the final Login button (form submission).
+     * Event listener for the final "Login" button (form submission).
      */
-// AFTER
-/**
- * Event listener for the final Login button (form submission).
- */
-loginForm.addEventListener('submit', async (event) => {
-    event.preventDefault(); // Stop the form from reloading the page
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); // Stop the form from reloading the page
 
-    // 1. Check if wallet is connected
-    // (The 'account' variable is set by your connectWalletBtn listener)
-    if (!account) { 
-        alert('Please connect your wallet first!');
-        return;
-    }
-
-    // 2. Get all form data
-    const formData = new FormData(loginForm);
-    const data = Object.fromEntries(formData.entries());
-    data.wallet = account; // Add the connected wallet address
-
-    // 3. Find out which role is selected
-    const selectedRole = document.querySelector('input[name="role"]:checked').value;
-
-    // 4. Handle logic based on role
-    if (selectedRole === 'freelancer') {
-        
-        // --- FREELANCER LOGIN ---
-        // We will call your /create_profile endpoint from app.py
-        try {
-            const profileData = {
-                wallet: data.wallet,
-                name: data.freelancerName,
-                linkedin: data.freelancerLinkedIn,
-                skills: data.skills.split(',').map(s => s.trim()), // Convert string to array
-                email: data.emailAddress,
-                phone: data.phoneNumber
-                // Note: Your form doesn't have 'bio' or 'github',
-                // but your app.py endpoint handles that.
-            };
-
-            const response = await fetch('http://localhost:5000/create_profile', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(profileData)
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                alert('Profile saved successfully! Redirecting to your dashboard.');
-                // Redirect to the Freelancer dashboard
-                window.location.href = '/Fdashboard'; 
-            } else {
-                alert('Error saving profile: ' + (result.error || 'Unknown error'));
+            if (!account) { 
+                alert('Please connect your wallet first!');
+                return;
             }
 
-        } catch (err) {
-            console.error('Freelancer login error:', err);
-            alert('A frontend error occurred. Check the console.');
-        }
+            const formData = new FormData(loginForm);
+            const data = Object.fromEntries(formData.entries());
+            data.wallet = account; // Add the connected wallet to the form data
 
-    } else if (selectedRole === 'employer') {
-        
-        // --- EMPLOYER LOGIN ---
-        // You do not have a backend endpoint for this yet in app.py.
-        // For now, we can just redirect them.
-        
-        // In the future, you would add:
-        // await fetch('http://localhost:5000/save_employer_profile', { ... });
-        
-        alert('Employer login successful! Redirecting to your dashboard.');
-        // Redirect to the Employer dashboard
-        window.location.href = '/Edashboard';
+            const selectedRole = document.querySelector('input[name="role"]:checked').value;
+
+            // --- FREELANCER LOGIN LOGIC ---
+            if (selectedRole === 'freelancer') {
+                try {
+                    const profileData = {
+                        wallet: data.wallet,
+                        name: data.freelancerName,
+                        linkedin: data.freelancerLinkedIn,
+                        skills: data.skills.split(',').map(s => s.trim()), // Convert string to array
+                        email: data.emailAddress,
+                        phone: data.phoneNumber
+                    };
+
+                    const response = await fetch('http://localhost:5000/create_profile', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(profileData)
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        alert('Profile saved successfully! Redirecting to your dashboard.');
+                        // Save the wallet to browser storage for the dashboard to use
+                        localStorage.setItem('userWalletAddress', account);
+                        // Redirect to the Freelancer dashboard
+                        window.location.href = '/Fdashboard'; 
+                    } else {
+                        // Show error from the backend
+                        alert('Error saving profile: ' + (result.error || 'Unknown error'));
+                    }
+
+                } catch (err) {
+                    // Show network/fetch error
+                    console.error('Freelancer login error:', err);
+                    alert('A frontend error occurred. Check the console.');
+                }
+
+            // --- EMPLOYER LOGIN LOGIC ---
+            } else if (selectedRole === 'employer') {
+                
+                // (In the future, you would add a fetch() call here to save employer data)
+                
+                alert('Employer login successful! Redirecting to your dashboard.');
+                // Save the wallet to browser storage for the dashboard to use
+                localStorage.setItem('userWalletAddress', account);
+                // Redirect to the Employer dashboard
+                window.location.href = '/Edashboard';
+            }
+        });
     }
-});
+
+    // --- 5. Initial Page Load Logic ---
+
+    // Run the role check once on load to set the correct 'required' fields
+    const checkedRole = document.querySelector('input[name="role"]:checked');
+    if (checkedRole) {
+        checkedRole.dispatchEvent(new Event('change'));
+    }
     
-    
+    // Run the validity check once on load
+    checkFormValidity();
 
 });

@@ -27,3 +27,8 @@ def edashboard():
 @routes.route('/Jobs')
 def jobs():
     return render_template('Fjobs.html')
+
+@routes.route('/wallet-login')
+def wallet_login():
+    """A simple page for returning users to log in."""
+    return render_template('wallet_login.html')

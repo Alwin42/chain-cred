@@ -1,13 +1,36 @@
 // This script runs when the dashboard.html page is loaded.
 
-// NOTE: 'account' must be defined globally, e.g., by a wallet connection script
-// loaded in main.html. We'll use a placeholder for this example.
-// In a real app, you would get this from your wallet connection logic.
-const account = "0x123...abc"; // <-- REPLACE THIS with your dynamic account variable
+// Get the real account from localStorage (set during login)
+const account = localStorage.getItem('userWalletAddress'); 
 
 document.addEventListener('DOMContentLoaded', () => {
+    
+    // If no account is found, the user is not logged in.
+    if (!account) {
+        alert("Please log in to view your dashboard.");
+        // Redirect them back to the login page
+        window.location.href = '/wallet-login'; // Use wallet-login for simple login
+        return; // Stop running the rest of the script
+    }
+    
     // Load the profile and projects as soon as the page loads
     loadDashboardData();
+
+    // === NEW LOGOUT LOGIC ===
+    const logoutButton = document.getElementById('logoutBtn');
+    
+    if (logoutButton) {
+        logoutButton.addEventListener('click', () => {
+            alert("Disconnecting wallet and logging out.");
+            
+            // 1. Remove the wallet address from storage
+            localStorage.removeItem('userWalletAddress');
+            
+            // 2. Redirect to the login page
+            window.location.href = '/wallet-login'; // Redirect to the simple login page
+        });
+    }
+    // === END OF NEW LOGIC ===
 });
 
 /**
@@ -25,14 +48,14 @@ async function loadDashboardData() {
 
     try {
         // --- 1. Load Profile ---
-        // We assume 'account' is a globally available variable
         if (typeof account === 'undefined' || !account) {
             throw new Error("User account is not defined.");
         }
         
         const profileResponse = await fetch(`http://localhost:5000/get_profile/${account}`);
+        
         if (!profileResponse.ok) {
-            throw new Error(`HTTP error! status: ${profileResponse.status}`);
+            throw new Error(`Profile not found (404). Have you saved it?`);
         }
         const pdata = await profileResponse.json();
 
@@ -55,16 +78,19 @@ async function loadDashboardData() {
         }
 
         // --- 2. Load Projects ---
-        // This is an assumed endpoint, based on your original script mentioning projects
-        const projectsResponse = await fetch(`http://localhost:5000/get_projects/${account}`);
+        
+        const projectsResponse = await fetch(`http://localhost:5000/get_all_projects/${account}`);
+        
         if (!projectsResponse.ok) {
             throw new Error(`HTTP error! status: ${projectsResponse.status}`);
         }
+        
         const projectsData = await projectsResponse.json();
+        const projects = projectsData.projects; 
 
         // Populate Projects List
-        if (projectsData && projectsData.length > 0) {
-            projectsListEl.innerHTML = projectsData
+        if (projects && projects.length > 0) {
+            projectsListEl.innerHTML = projects
                 .map(project => createProjectCardHTML(project))
                 .join('');
         } else {
@@ -73,32 +99,39 @@ async function loadDashboardData() {
 
     } catch (error) {
         console.error("Error loading dashboard data:", error);
-        projectsListEl.innerHTML = `<p class="text-red-400">Could not load projects. ${error.message}</p>`;
-        nameEl.innerText = "Error Loading Profile";
-        bioEl.innerText = "Could not connect to the server.";
+        
+        if (projectsListEl) {
+            projectsListEl.innerHTML = `<p class="text-red-400">Could not load projects. ${error.message}</p>`;
+        }
+        if (nameEl) {
+            nameEl.innerText = "Error Loading Profile";
+        }
+        if (bioEl) {
+            bioEl.innerText = error.message; // Show the real error
+        }
     }
 }
 
 /**
  * Helper function to create the HTML for a single project card.
- * @param {object} project - The project data object
+ * @param {object} project - The project data object from get_all_projects
  */
 function createProjectCardHTML(project) {
-    // Default project structure
+    
     const p = {
-        title: project.title || "Untitled Project",
+        title: project.projectName || "Untitled Project",
         description: project.description || "No description.",
-        tags: project.tags || [],
-        status: project.status || "In Progress",
+        tags: project.languages ? project.languages.split(',') : [], 
+        status: project.verified ? "Verified" : "Pending",
         link: project.link || "#"
     };
 
-    const statusColor = p.status.toLowerCase() === 'completed' 
+    const statusColor = p.status.toLowerCase() === 'verified' 
         ? 'text-green-400 bg-green-900/50' 
         : 'text-yellow-400 bg-yellow-900/50';
 
     const tagsHTML = p.tags
-        .map(tag => `<span class="bg-blue-600 text-white text-xs font-semibold px-3 py-1 rounded-full">${tag}</span>`)
+        .map(tag => `<span class="bg-blue-600 text-white text-xs font-semibold px-3 py-1 rounded-full">${tag.trim()}</span>`)
         .join(' ');
 
     return `
