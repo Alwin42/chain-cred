@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const res = await fetch('/hash_project', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ link: body.link })
+                    body: JSON.stringify(body)
                 });
                 const hashData = await res.json();
                 
@@ -71,8 +71,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const newCount = await loadDashboardData();
                 checkAndShowBadge(newCount);
 
+                } else {
+                    alert("Error: " + data.error);
+                }
             } catch(err) {
-                console.error(err);
                 alert("Submission failed: " + err.message);
             } finally {
                 submitBtn.disabled = false;
@@ -104,11 +106,12 @@ function displayBadges(count) {
         if (count >= badge.milestone) {
             badgesHtml += `
                 <div class="flex flex-col items-center group relative">
-                    <div class="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gray-800 border-2 border-yellow-500 flex items-center justify-center overflow-hidden shadow-lg hover:scale-110 transition duration-300 cursor-pointer" title="${badge.label}">
+                    <div class="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gray-800 border-2 border-yellow-500 flex items-center justify-center overflow-hidden shadow-lg hover:scale-110 transition duration-300 cursor-pointer" title="${badge.label} Badge">
                          <img src="/static/images/${badge.file}" alt="${badge.label}" class="w-full h-full object-cover">
                     </div>
                     <span class="text-xs text-yellow-400 mt-2 font-bold">${badge.milestone}+</span>
-                </div>`;
+                </div>
+            `;
         } else {
             badgesHtml += `
                 <div class="flex flex-col items-center opacity-40 grayscale">
@@ -116,10 +119,16 @@ function displayBadges(count) {
                         <ion-icon name="lock-closed" class="text-3xl text-gray-500"></ion-icon>
                     </div>
                     <span class="text-xs text-gray-500 mt-2">${badge.milestone}</span>
-                </div>`;
+                </div>
+            `;
         }
     });
-    container.innerHTML = (count < 3) ? `<div class="col-span-4 text-light-muted text-sm text-center italic mb-4">Complete 3 projects to earn your first badge!</div>${badgesHtml}` : badgesHtml;
+
+    if (count < 3) {
+        container.innerHTML = `<div class="col-span-4 text-light-muted text-sm text-center italic mb-4">Complete 3 projects to earn your first badge!</div>${badgesHtml}`;
+    } else {
+        container.innerHTML = badgesHtml;
+    }
 }
 
 async function loadDashboardData() {
@@ -129,7 +138,10 @@ async function loadDashboardData() {
     const skillsEl = document.getElementById('profile-skills');
     const socialsEl = document.getElementById('profile-socials');
     const projectsListEl = document.getElementById('projects-list');
+    
+    // The Loader Element
     const loader = document.getElementById('global-loader');
+
     let projectCount = 0;
 
     try {
@@ -175,7 +187,6 @@ async function loadDashboardData() {
             }
         } else {
             nameEl.innerText = "Profile Not Found";
-            bioEl.innerText = "Please click 'Edit My Profile' to set up your details.";
         }
 
         // 2. Handle Projects & Reviews (Blockchain)
@@ -249,8 +260,12 @@ async function loadDashboardData() {
         console.error("Dashboard Load Error:", err);
         projectsListEl.innerHTML = `<p class="text-red-400 text-center">Failed to load data. Ensure wallet is connected.</p>`;
     } finally {
+        // === HIDE LOADER ===
+        // This runs after data is fetched (or if error occurs)
         if(loader) {
+            // Add fade-out classes
             loader.classList.add('opacity-0', 'pointer-events-none');
+            // Remove from DOM after transition
             setTimeout(() => loader.remove(), 500);
         }
     }
