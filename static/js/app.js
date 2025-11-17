@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
     // Get stored data
     const userRole = localStorage.getItem('userRole');
-    const userWallet = localStorage.getItem('userWalletAddress'); // Check if wallet is connected
+    const userWallet = localStorage.getItem('userWalletAddress'); 
     
     const navJobs = document.getElementById('nav-jobs');
     const navDashboard = document.getElementById('nav-dashboard');
@@ -11,24 +11,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // === SCENARIO 1: GUEST (Not Logged In) ===
         if (!userWallet) {
-            // Define a function to handle guest clicks
+            // 1. Make sure the link is visible for guests (to entice them)
+            navJobs.style.display = 'inline';
+            navJobs.innerText = "JOBS";
+            
+            // 2. Block access when clicked
             const blockAccess = (event) => {
-                event.preventDefault(); // STOP the link from opening
-                alert("🔒 Login Required\n\nPlease connect your wallet or sign in to access Jobs and Dashboards.");
-                window.location.href = '/wallet-login'; // Redirect to login page
+                event.preventDefault(); 
+                alert("🔒 Login Required\n\nPlease connect your wallet or sign in to access this feature.");
+                window.location.href = '/wallet-login'; 
             };
 
-            // Attach this blocking function to both links
             navJobs.addEventListener('click', blockAccess);
             navDashboard.addEventListener('click', blockAccess);
             
-            // Optional: Visually indicate they are locked (e.g., add a lock icon)
+            // Add lock icon to dashboard for visual cue
             navDashboard.innerHTML = 'DASHBOARD <ion-icon name="lock-closed-outline" class="text-xs mb-1"></ion-icon>';
         } 
         
         // === SCENARIO 2: LOGGED IN AS EMPLOYER ===
         else if (userRole === 'employer') {
-            // Change "JOBS" to "HIRE" and link to find freelancers
+            // === VISIBLE ===
+            navJobs.style.display = 'inline'; 
+            
+            // Change text to "HIRE" and link to finding freelancers
             navJobs.innerText = "HIRE";
             navJobs.href = "/find-freelancers"; 
             
@@ -36,11 +42,11 @@ document.addEventListener("DOMContentLoaded", () => {
             navDashboard.href = "/Edashboard";
         } 
         
-        // === SCENARIO 3: LOGGED IN AS FREELANCER (Default) ===
+        // === SCENARIO 3: LOGGED IN AS FREELANCER ===
         else {
-            // Keep "JOBS" pointing to job board
-            navJobs.innerText = "JOBS";
-            navJobs.href = "/Jobs"; 
+            // === HIDDEN ===
+            // Freelancers should not see this link
+            navJobs.style.display = 'none'; 
             
             // Point Dashboard to Freelancer Dashboard
             navDashboard.href = "/Fdashboard";

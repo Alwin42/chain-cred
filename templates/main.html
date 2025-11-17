@@ -21,20 +21,20 @@
       }
     </script>
     
-    <title>{% block title %}Chain-Cred{% endblock %}</title>
+    <title>{% block title %}Cred Chain{% endblock %}</title>
 </head>
 <body class="bg-primary-dark text-light font-sans">
 
     <nav class="container mx-auto px-6 py-6 flex justify-between items-center">
         <a href="/" class="text-3xl font-bold text-light">
-            Chain-Cred
+            Cred Chain
         </a>
         
         <div class="hidden md:flex space-x-8 items-center font-medium">
             <a href="/" class="text-light hover:text-light-muted transition">HOME</a>
             <a href="{{url_for('routes.about')}}" class="text-light hover:text-light-muted transition">ABOUT</a>
             
-            <a id="nav-jobs" href="{{url_for('routes.jobs')}}" class="text-light hover:text-light-muted transition">JOBS</a>
+            <a id="nav-jobs" href="#" class="text-light hover:text-light-muted transition"></a>
             <a id="nav-dashboard" href="{{url_for('routes.dashboard')}}" class="text-light hover:text-light-muted transition">DASHBOARD</a>
             
             <a href="{{url_for('routes.login')}}" class="text-light hover:text-light-muted transition">SIGN IN </a>

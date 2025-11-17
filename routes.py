@@ -86,9 +86,6 @@ def dashboard():
 def edashboard():
     return render_template('employer_dashboard.html')
 
-@routes.route('/Jobs')
-def jobs():
-    return render_template('Fjobs.html')
 
 @routes.route('/wallet-login')
 def wallet_login():

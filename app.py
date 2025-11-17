@@ -29,6 +29,26 @@ def user():
 def clientpage():
     return render_template('client.html')
 
+# --- 2. YOUR NEW FEATURE ---
+@app.route("/get_all_freelancers", methods=["GET"])
+def get_all_freelancers():
+    load_profiles()
+    results = []
+    
+    for wallet, profile in PROFILES.items():
+        results.append({
+            "wallet": wallet,
+            "name": profile.get("name", "Unnamed User"),
+            "bio": profile.get("bio", "No bio provided."),
+            "skills": profile.get("skills", []),
+            "github": profile.get("github", ""),
+            "linkedin": profile.get("linkedin", ""),
+            "email": profile.get("email", ""),
+            "phone": profile.get("phone", "")
+            # ===========================
+        })
+        
+    return jsonify(results)
 #-----------------------------------------------------------JSON FILES-----------------------------------------------------------
 BUILDERS_FILE = "builders.json"
 def load_builders():

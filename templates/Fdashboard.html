@@ -7,20 +7,44 @@
     <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         <div class="lg:col-span-1 space-y-8">
-            <div class="bg-primary rounded-2xl shadow-2xl border border-gray-700 overflow-hidden p-8 flex flex-col items-center">
-                <div class="w-32 h-32 rounded-full bg-primary-dark border-4 border-gray-700 flex items-center justify-center text-5xl mb-4">
+            
+            <div class="bg-primary rounded-2xl shadow-2xl border border-gray-700 overflow-hidden p-8 flex flex-col items-center relative">
+                <div class="w-32 h-32 rounded-full bg-primary-dark border-4 border-gray-700 flex items-center justify-center text-5xl mb-4 shadow-lg">
                     <span id="profile-avatar-initials">--</span>
                 </div>
-                <h2 id="profile-name" class="text-3xl font-bold text-center text-white">Loading...</h2>
-                <p id="profile-bio" class="text-light-muted text-center text-sm mt-2">...</p>
                 
-                <a href="{{url_for('routes.edit_profile')}}" class="mt-6 w-full text-center px-6 py-2.5 rounded-lg border border-blue-500 text-blue-400 font-semibold hover:bg-blue-500 hover:text-white transition">
-                    Edit My Profile
-                </a>
-                <button id="logoutBtn" class="mt-4 w-full text-center px-6 py-2.5 rounded-lg border border-red-500 text-red-400 font-semibold hover:bg-red-500 hover:text-white transition">
-                    Disconnect Wallet
-                </button>
+                <h2 id="profile-name" class="text-3xl font-bold text-center text-white mb-2">Loading...</h2>
+                
+                <p id="profile-bio" class="text-light-muted text-center text-sm mb-4 px-2">...</p>
+
+                <div id="profile-skills" class="flex flex-wrap justify-center gap-2 mb-5 w-full px-2">
+                    </div>
+
+                <div id="profile-socials" class="flex gap-4 mb-6">
+                    </div>
+
+                <div class="w-full space-y-3">
+                    <a href="{{url_for('routes.edit_profile')}}" class="block w-full text-center px-6 py-2.5 rounded-lg border border-blue-500 text-blue-400 font-semibold hover:bg-blue-500 hover:text-white transition duration-300">
+                        Edit My Profile
+                    </a>
+                    <button id="logoutBtn" class="block w-full text-center px-6 py-2.5 rounded-lg border border-red-500 text-red-400 font-semibold hover:bg-red-500 hover:text-white transition duration-300">
+                        Disconnect Wallet
+                    </button>
+                </div>
             </div>
+
+            <div class="bg-primary rounded-2xl shadow-2xl border border-gray-700 p-6">
+                <h3 class="text-xl font-bold text-white mb-6 flex items-center border-b border-gray-700 pb-3">
+                    <ion-icon name="medal-outline" class="text-yellow-400 mr-2"></ion-icon> 
+                    Achievements
+                </h3>
+                <div id="badges-container" class="grid grid-cols-4 gap-2">
+                    <div class="text-light-muted text-sm col-span-4 text-center animate-pulse">
+                        Loading badges...
+                    </div>
+                </div>
+            </div>
+
         </div>
         
         <div class="lg:col-span-2 space-y-8">
@@ -30,13 +54,13 @@
                         <ion-icon name="folder-open-outline" class="text-2xl mr-2"></ion-icon> Projects
                     </h3>
                     <button onclick="document.getElementById('submitProjectModal').classList.remove('hidden')" 
-                            class="px-4 py-2 rounded-lg bg-blue-600 text-white font-bold hover:bg-blue-500 flex items-center">
+                            class="px-4 py-2 rounded-lg bg-blue-600 text-white font-bold hover:bg-blue-500 flex items-center shadow-lg hover:shadow-blue-500/50 transition">
                         <ion-icon name="add-outline" class="text-lg mr-1"></ion-icon> Add New
                     </button>
                 </div>
                 
                 <div id="projects-list" class="p-8 space-y-6">
-                    <div class="text-light-muted">Loading projects...</div>
+                    <div class="text-light-muted text-center">Loading projects...</div>
                 </div>
             </div>
         </div>
@@ -45,18 +69,27 @@
 
 <div id="submitProjectModal" class="fixed inset-0 bg-black bg-opacity-80 hidden flex justify-center items-center z-50">
     <div class="bg-primary border border-gray-700 rounded-xl p-8 w-full max-w-lg relative">
-        <button onclick="document.getElementById('submitProjectModal').classList.add('hidden')" class="absolute top-4 right-4 text-white text-2xl">&times;</button>
+        <button onclick="document.getElementById('submitProjectModal').classList.add('hidden')" class="absolute top-4 right-4 text-white text-2xl hover:text-gray-300">&times;</button>
         <h2 class="text-2xl font-bold text-white mb-4">Submit Completed Project</h2>
-        
         <form id="projectForm" class="space-y-4">
-            <input id="proj_name" placeholder="Project Name" class="w-full bg-primary-dark border border-gray-600 text-light rounded p-3">
-            <textarea id="proj_desc" placeholder="Short Description" class="w-full bg-primary-dark border border-gray-600 text-light rounded p-3"></textarea>
-            <input id="proj_lang" placeholder="Languages (comma separated)" class="w-full bg-primary-dark border border-gray-600 text-light rounded p-3">
-            <input id="proj_link" placeholder="GitHub/Project Link" class="w-full bg-primary-dark border border-gray-600 text-light rounded p-3">
-            <input id="proj_client" placeholder="Client Wallet Address (0x...)" class="w-full bg-primary-dark border border-gray-600 text-light rounded p-3">
-            
+            <input id="proj_name" placeholder="Project Name" class="w-full bg-primary-dark border border-gray-600 text-light rounded p-3 focus:border-blue-500 outline-none">
+            <textarea id="proj_desc" placeholder="Short Description" class="w-full bg-primary-dark border border-gray-600 text-light rounded p-3 focus:border-blue-500 outline-none"></textarea>
+            <input id="proj_lang" placeholder="Languages (comma separated)" class="w-full bg-primary-dark border border-gray-600 text-light rounded p-3 focus:border-blue-500 outline-none">
+            <input id="proj_link" placeholder="GitHub/Project Link" class="w-full bg-primary-dark border border-gray-600 text-light rounded p-3 focus:border-blue-500 outline-none">
+            <input id="proj_client" placeholder="Client Wallet Address (0x...)" class="w-full bg-primary-dark border border-gray-600 text-light rounded p-3 focus:border-blue-500 outline-none">
             <button type="submit" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded transition">Submit On-Chain</button>
         </form>
+    </div>
+</div>
+
+<div id="badgeModal" class="fixed inset-0 bg-black bg-opacity-90 hidden flex justify-center items-center z-[60]">
+    <div class="bg-gradient-to-b from-gray-800 to-black border-2 border-yellow-500 rounded-2xl p-8 w-full max-w-md relative text-center shadow-[0_0_50px_rgba(234,179,8,0.3)]">
+        <button onclick="document.getElementById('badgeModal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl">&times;</button>
+        <div class="mb-6"><ion-icon name="ribbon-outline" class="text-8xl text-yellow-400 animate-bounce"></ion-icon></div>
+        <h2 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500 mb-2">Badge Earned!</h2>
+        <p class="text-xl text-white font-semibold mb-4">Milestone Reached</p>
+        <p class="text-gray-300 mb-6">Congratulations! You have completed <span id="milestone-count" class="text-yellow-400 font-bold text-xl">--</span> projects.<br>A new badge has been minted.</p>
+        <button onclick="document.getElementById('badgeModal').classList.add('hidden')" class="px-8 py-3 rounded-full bg-yellow-500 text-black font-bold hover:bg-yellow-400 transition transform hover:scale-105">Awesome!</button>
     </div>
 </div>
 
