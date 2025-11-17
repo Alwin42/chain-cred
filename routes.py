@@ -91,34 +91,6 @@ def hash_project():
     # Generate Hash
     project_hash = hashlib.sha256(content).hexdigest()
     return jsonify({"hash": project_hash})
-@routes.route("/profiles.json")
-def send_profiles_json():
-    # Assumes profiles.json is in the root directory
-    return send_from_directory(".", "profiles.json", mimetype='application/json')
-
-# --- GET ALL PROJECTS (Read-Only) ---
-@routes.route('/get_all_projects/<builder>', methods=['GET'])
-def get_all_projects(builder):
-    if not contract: return jsonify({"projects": []})
-    try:
-        builder_address = Web3.to_checksum_address(builder)
-        projects_raw = contract.functions.getAllProjects(builder_address).call()
-        
-        projects = []
-        for p in projects_raw:
-            projects.append({
-                "client": p[0],
-                "projectName": p[1],
-                "description": p[2],
-                "languages": p[3],
-                "projectHash": p[4],
-                "link": p[5],
-                "verified": p[6],
-                "timestamp": p[7]
-            })
-        return jsonify({"builder": builder, "projects": projects})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 
 # --- GET REVIEWS (Read-Only) ---
