@@ -100,7 +100,7 @@ Before starting, ensure you have the following installed and configured:
 ### Local Installation (Cloning)
 First, clone the repository and navigate into the project directory:
 ```
-git clone [https://github.com/SR-005/cred-chain](https://github.com/SR-005/cred-chain)
+git clone https://github.com/SR-005/cred-chain
 cd cred-chain
 ```
 ### Backend Environment Setup (Python/Flask) 
@@ -163,7 +163,15 @@ The application will typically start at http://localhost:3000. Connect your Meta
 
 ## Video Walkthrough and Images
 
+https://youtu.be/hdxkkQZXab8
 
+![Screen](https://github.com/user-attachments/assets/827b28b2-7d2f-41fd-9484-620c5a582b33)
+
+![Search](https://github.com/user-attachments/assets/115b0b6b-dafc-4fee-a5e6-331c46fda417)
+
+![Review](https://github.com/user-attachments/assets/e73ab6c1-883d-41ff-8743-c25b2f9b9dd1)
+
+![Badge confirm](https://github.com/user-attachments/assets/4772c4a7-436e-4be9-9c32-7ce5e35c6503)
 
 ---
 
