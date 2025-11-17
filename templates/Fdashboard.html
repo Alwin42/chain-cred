@@ -1,78 +1,66 @@
 {% extends "main.html" %}
 
-{% block title %}Profile Dashboard | Chain-Cred{% endblock %}
+{% block title %}Freelancer Dashboard | Chain-Cred{% endblock %}
 
 {% block content %}
 <div class="min-h-screen bg-primary-dark text-light p-4 sm:p-8">
     <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         <div class="lg:col-span-1 space-y-8">
-            <div class="bg-primary rounded-2xl shadow-2xl border border-gray-700 overflow-hidden">
-                <div class="p-8 flex flex-col items-center">
-                    <div class="w-32 h-32 rounded-full bg-primary-dark border-4 border-gray-700 flex items-center justify-center text-5xl mb-4">
-                        <span id="profile-avatar-initials">--</span>
-                    </div>
-                    
-                    <h2 id="profile-name" class="text-3xl font-bold text-center text-white">Loading...</h2>
-                    
-                    <p id="profile-bio" class="text-light-muted text-center text-sm mt-2 h-10">...</p>
-                    
-                    <a href="{{url_for('routes.edit_profile')}}" class="mt-6 w-full text-center px-6 py-2.5 rounded-lg border border-blue-500 text-blue-400 font-semibold hover:bg-blue-500 hover:text-white transition duration-300 ease-in-out">
-                        <ion-icon name="create-outline" class="text-lg align-middle mr-1"></ion-icon>
-                        Edit My Profile
-                    </a>
-
-                    <button id="logoutBtn" class="mt-4 w-full text-center px-6 py-2.5 rounded-lg border border-red-500 text-red-400 font-semibold hover:bg-red-500 hover:text-white transition duration-300 ease-in-out">
-                        <ion-icon name="log-out-outline" class="text-lg align-middle mr-1"></ion-icon>
-                        Disconnect Wallet
-                    </button>
-                    </div>
-                
-                <div class="border-t border-gray-700 p-8 space-y-4">
-                    <h3 class="text-lg font-semibold text-white mb-4">Contact Information</h3>
-                    
-                    <div class="flex items-center gap-4">
-                        <ion-icon name="mail-outline" class="w-5 h-5 text-light-muted flex-shrink-0"></ion-icon>
-                        <span id="profile-email" class="text-light-muted">...</span>
-                    </div>
-                    
-                    <div class="flex items-center gap-4">
-                        <ion-icon name="call-outline" class="w-5 h-5 text-light-muted flex-shrink-0"></ion-icon>
-                        <span id="profile-phone" class="text-light-muted">...</span>
-                    </div>
+            <div class="bg-primary rounded-2xl shadow-2xl border border-gray-700 overflow-hidden p-8 flex flex-col items-center">
+                <div class="w-32 h-32 rounded-full bg-primary-dark border-4 border-gray-700 flex items-center justify-center text-5xl mb-4">
+                    <span id="profile-avatar-initials">--</span>
                 </div>
+                <h2 id="profile-name" class="text-3xl font-bold text-center text-white">Loading...</h2>
+                <p id="profile-bio" class="text-light-muted text-center text-sm mt-2">...</p>
                 
-                <div class="border-t border-gray-700 p-8">
-                    <h3 class="text-lg font-semibold text-white mb-4">Skills</h3>
-                    <div id="profile-skills-list" class="flex flex-wrap gap-2">
-                        <span class="bg-gray-700 text-light-muted text-xs font-semibold px-3 py-1 rounded-full animate-pulse">Loading...</span>
-                    </div>
-                </div>
+                <a href="{{url_for('routes.edit_profile')}}" class="mt-6 w-full text-center px-6 py-2.5 rounded-lg border border-blue-500 text-blue-400 font-semibold hover:bg-blue-500 hover:text-white transition">
+                    Edit My Profile
+                </a>
+                <button id="logoutBtn" class="mt-4 w-full text-center px-6 py-2.5 rounded-lg border border-red-500 text-red-400 font-semibold hover:bg-red-500 hover:text-white transition">
+                    Disconnect Wallet
+                </button>
             </div>
         </div>
         
         <div class="lg:col-span-2 space-y-8">
-            
             <div class="bg-primary rounded-2xl shadow-2xl border border-gray-700">
                 <div class="px-8 py-6 border-b border-gray-700 flex justify-between items-center">
                     <h3 class="text-2xl font-bold flex items-center">
-                        <ion-icon name="folder-open-outline" class="text-2xl mr-2"></ion-icon>
-                        Projects
+                        <ion-icon name="folder-open-outline" class="text-2xl mr-2"></ion-icon> Projects
                     </h3>
-                    
+                    <button onclick="document.getElementById('submitProjectModal').classList.remove('hidden')" 
+                            class="px-4 py-2 rounded-lg bg-blue-600 text-white font-bold hover:bg-blue-500 flex items-center">
+                        <ion-icon name="add-outline" class="text-lg mr-1"></ion-icon> Add New
+                    </button>
                 </div>
                 
                 <div id="projects-list" class="p-8 space-y-6">
                     <div class="text-light-muted">Loading projects...</div>
                 </div>
             </div>
-            
         </div>
     </div>
 </div>
 
-<script src="{{ url_for('static', filename='js/Fdashboard.js') }}"></script>
+<div id="submitProjectModal" class="fixed inset-0 bg-black bg-opacity-80 hidden flex justify-center items-center z-50">
+    <div class="bg-primary border border-gray-700 rounded-xl p-8 w-full max-w-lg relative">
+        <button onclick="document.getElementById('submitProjectModal').classList.add('hidden')" class="absolute top-4 right-4 text-white text-2xl">&times;</button>
+        <h2 class="text-2xl font-bold text-white mb-4">Submit Completed Project</h2>
+        
+        <form id="projectForm" class="space-y-4">
+            <input id="proj_name" placeholder="Project Name" class="w-full bg-primary-dark border border-gray-600 text-light rounded p-3">
+            <textarea id="proj_desc" placeholder="Short Description" class="w-full bg-primary-dark border border-gray-600 text-light rounded p-3"></textarea>
+            <input id="proj_lang" placeholder="Languages (comma separated)" class="w-full bg-primary-dark border border-gray-600 text-light rounded p-3">
+            <input id="proj_link" placeholder="GitHub/Project Link" class="w-full bg-primary-dark border border-gray-600 text-light rounded p-3">
+            <input id="proj_client" placeholder="Client Wallet Address (0x...)" class="w-full bg-primary-dark border border-gray-600 text-light rounded p-3">
+            
+            <button type="submit" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded transition">Submit On-Chain</button>
+        </form>
+    </div>
+</div>
 
+<script src="{{ url_for('static', filename='js/Fdashboard.js') }}"></script>
 <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 {% endblock %}
