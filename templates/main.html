@@ -11,10 +11,10 @@
         theme: {
           extend: {
             colors: {
-              'primary-dark': 'rgb(12, 43, 78)', // Dark Blue BG
-              'primary': 'rgb(26, 61, 100)',  // Lighter Blue Button
-              'light': '#FFFFFF',             // White
-              'light-muted': '#E0E0E0',      // Light gray for text
+              'primary-dark': 'rgb(12, 43, 78)', 
+              'primary': 'rgb(26, 61, 100)',  
+              'light': '#FFFFFF',             
+              'light-muted': '#E0E0E0',      
             }
           }
         }
@@ -33,13 +33,14 @@
         <div class="hidden md:flex space-x-8 items-center font-medium">
             <a href="/" class="text-light hover:text-light-muted transition">HOME</a>
             <a href="{{url_for('routes.about')}}" class="text-light hover:text-light-muted transition">ABOUT</a>
-            <a href="{{url_for('routes.jobs')}}" class="text-light hover:text-light-muted transition">JOBS</a>
-            <a href="{{url_for('routes.dashboard')}}" class="text-light hover:text-light-muted transition">DASHBOARD</a>
+            
+            <a id="nav-jobs" href="{{url_for('routes.jobs')}}" class="text-light hover:text-light-muted transition">JOBS</a>
+            <a id="nav-dashboard" href="{{url_for('routes.dashboard')}}" class="text-light hover:text-light-muted transition">DASHBOARD</a>
+            
             <a href="{{url_for('routes.login')}}" class="text-light hover:text-light-muted transition">SIGN IN </a>
             <a href="{{url_for('routes.wallet_login')}}" id="connect" class="bg-primary text-light font-semibold py-2 px-6 rounded-lg hover:bg-opacity-90 transition">
                 WALLET
             </a>
-           
         </div>
     </nav>
 
