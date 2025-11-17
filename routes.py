@@ -11,23 +11,13 @@ routes = Blueprint('routes', __name__)
 # ---------------------------------------------------------------------------
 # 1. SETUP WEB3 (For Read-Only Operations)
 # ---------------------------------------------------------------------------
-load_dotenv()
-MYADDRESS = os.getenv("METAMASK") 
-SECRETCODE = os.getenv("SECRETKEY")
+
 
 w3 = Web3(Web3.HTTPProvider("https://rpc.api.moonbase.moonbeam.network"))
 CHAIN_ID = 1287
 # Ensure this matches credchain.js
 CONTRACT_ADDRESS = "0xCCc0F45E8bE87022ea3E553BdD2f64cD6aAeed79" 
 
-try:
-    with open("./static/compiledcccode.json", "r") as file:
-        compiledsol = json.load(file)
-    contract_abi = compiledsol["contracts"]["chaincred.sol"]["CredChain"]["abi"]
-    contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=contract_abi)
-except Exception as e:
-    print(f"Error loading ABI in routes.py: {e}")
-    contract = None
 
 # ---------------------------------------------------------------------------
 # 2. PAGE ROUTES
