@@ -1,0 +1,81 @@
+{% extends "main.html" %}
+
+{% block title %}Freelancer Profile | Chain-Cred{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-primary-dark text-light p-4 sm:p-8">
+    
+    <input type="hidden" id="targetWallet" value="{{ wallet }}">
+
+    <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <div class="lg:col-span-1 space-y-6">
+            
+            <div class="bg-primary rounded-2xl shadow-2xl border border-gray-700 overflow-hidden p-8 flex flex-col items-center relative group hover:border-blue-500 transition duration-300">
+                
+                <div class="w-32 h-32 rounded-full bg-gray-800 border-4 border-gray-600 flex items-center justify-center text-5xl mb-4 shadow-lg transform group-hover:scale-105 transition duration-300">
+                    <span id="p-avatar">--</span>
+                </div>
+                
+                <h1 id="p-name" class="text-3xl font-bold text-center text-white mb-2">Loading...</h1>
+                <p class="text-xs text-blue-400 bg-blue-900/30 px-3 py-1 rounded-full mb-4 font-mono" id="p-wallet">0x...</p>
+                
+                <p id="p-bio" class="text-light-muted text-center text-sm mb-6 italic">...</p>
+
+                <div id="p-skills" class="flex flex-wrap justify-center gap-2 mb-6 w-full">
+                    </div>
+
+                <div class="w-full border-t border-gray-700 pt-6 space-y-3">
+                    <div id="contact-email" class="flex items-center gap-3 text-sm text-gray-300 hidden">
+                        <ion-icon name="mail-outline" class="text-red-400 text-lg"></ion-icon>
+                        <span id="val-email"></span>
+                    </div>
+                    <div id="contact-phone" class="flex items-center gap-3 text-sm text-gray-300 hidden">
+                        <ion-icon name="call-outline" class="text-green-400 text-lg"></ion-icon>
+                        <span id="val-phone"></span>
+                    </div>
+                    
+                    <div class="flex justify-center gap-4 mt-4 pt-4">
+                        <a id="link-github" href="#" target="_blank" class="text-2xl text-gray-400 hover:text-white transition hidden">
+                            <ion-icon name="logo-github"></ion-icon>
+                        </a>
+                        <a id="link-linkedin" href="#" target="_blank" class="text-2xl text-blue-500 hover:text-blue-400 transition hidden">
+                            <ion-icon name="logo-linkedin"></ion-icon>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-primary rounded-2xl shadow-lg border border-gray-700 p-6">
+                <h3 class="text-lg font-bold text-white mb-4 flex items-center">
+                    <ion-icon name="trophy-outline" class="text-yellow-400 mr-2"></ion-icon> Achievements
+                </h3>
+                <div id="p-badges" class="grid grid-cols-4 gap-2">
+                    </div>
+            </div>
+
+        </div>
+
+        <div class="lg:col-span-2 space-y-8">
+            <div class="bg-primary rounded-2xl shadow-2xl border border-gray-700 p-8">
+                <h2 class="text-2xl font-bold text-white mb-6 flex items-center border-b border-gray-700 pb-4">
+                    <ion-icon name="layers-outline" class="text-blue-400 mr-3"></ion-icon>
+                    Verified Portfolio
+                </h2>
+                
+                <div id="p-projects-list" class="space-y-6">
+                    <div class="text-center text-light-muted animate-pulse py-10">
+                        Fetching on-chain data...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+<script type="module" src="{{ url_for('static', filename='js/credchain.js') }}"></script>
+<script src="{{ url_for('static', filename='js/profile_freelancer.js') }}"></script>
+
+{% endblock %}

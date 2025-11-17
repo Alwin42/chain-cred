@@ -7,7 +7,7 @@ from web3 import Web3
 routes = Blueprint('routes', __name__)
 
 # ---------------------------------------------------------------------------
-# 1. SETUP WEB3 & CONTRACT (Required for these routes to work)
+# 1. SETUP WEB3 & CONTRACT
 # ---------------------------------------------------------------------------
 load_dotenv()
 
@@ -86,6 +86,9 @@ def dashboard():
 def edashboard():
     return render_template('employer_dashboard.html')
 
+@routes.route('/Jobs')
+def jobs():
+    return render_template('Fjobs.html')
 
 @routes.route('/wallet-login')
 def wallet_login():
@@ -95,6 +98,10 @@ def wallet_login():
 def find_freelancers():
     return render_template('find_freelancer.html')
 
+@routes.route('/profile/<wallet>')
+def view_freelancer_profile(wallet):
+    return render_template('profile_freelancer.html', wallet=wallet)
+
 
 # ---------------------------------------------------------------------------
 # 3. API ROUTES (Smart Contract Interactions)
@@ -103,21 +110,15 @@ def find_freelancers():
 # --- SUBMIT PROJECT ---
 @routes.route('/submit_project', methods=['POST'])
 def submit_project():
-    """
-    Expects JSON: { "wallet": "0x...", "client": "0x...", "name": "...", "description": "...", "languages": "...", "link": "..." }
-    """
     if not contract: return jsonify({"error": "Contract not loaded"}), 500
 
     try:
         data = request.get_json()
         
-        # Generate a simple hash for the project (or fetch from backend logic if needed)
-        # Ideally, you hash the file content here, but using link string as seed for now
+        # Simple hash generation (in real app, hash the file content)
         import hashlib
         project_hash = hashlib.sha256(data.get("link", "").encode()).hexdigest()
 
-        # Prepare the struct
-        # Struct order in Solidity: user, client, projectName, description, languages, projectHash, link
         project_input = (
             Web3.to_checksum_address(data['wallet']),   # user
             Web3.to_checksum_address(data['client']),   # client
@@ -128,7 +129,6 @@ def submit_project():
             data['link']
         )
 
-        # Call Contract
         fn = contract.functions.addProject(project_input)
         receipt = send_transaction(fn)
 
@@ -142,19 +142,15 @@ def submit_project():
         return jsonify({"error": str(e)}), 500
 
 
-# --- GET ALL PROJECTS (For a Freelancer) ---
+# --- GET ALL PROJECTS ---
 @routes.route('/get_all_projects/<builder>', methods=['GET'])
 def get_all_projects(builder):
-    """
-    Fetches all projects for a specific freelancer address.
-    """
     if not contract: return jsonify({"projects": []})
 
     try:
         builder_address = Web3.to_checksum_address(builder)
         projects_raw = contract.functions.getAllProjects(builder_address).call()
 
-        # Format the output (Structs return tuples)
         projects = []
         for p in projects_raw:
             projects.append({
@@ -174,36 +170,66 @@ def get_all_projects(builder):
         return jsonify({"error": str(e)}), 500
 
 
+# --- GET PROJECT REVIEWS (FIXED: Added this Route) ---
+@routes.route('/get_project_reviews', methods=['GET'])
+def get_project_reviews():
+    """
+    Fetches reviews for a specific project index of a builder.
+    Usage: /get_project_reviews?builder=0x...&index=0
+    """
+    builder = request.args.get('builder')
+    index = request.args.get('index')
+    
+    if not contract or not builder or index is None: 
+        return jsonify([])
+
+    try:
+        # Call Smart Contract
+        reviews = contract.functions.getProjectReviews(
+            Web3.to_checksum_address(builder),
+            int(index)
+        ).call()
+
+        # Format Response
+        formatted_reviews = []
+        for r in reviews:
+            formatted_reviews.append({
+                "reviewer": r[0],
+                "projectIndex": r[1],
+                "rating": r[2],
+                "commentHash": r[3]
+            })
+        
+        return jsonify(formatted_reviews)
+
+    except Exception as e:
+        print(f"Error fetching reviews: {e}")
+        return jsonify([])
+
+
 # --- GET PROJECTS FOR CLIENT ---
 @routes.route('/get_projects_for_client/<client_address>', methods=['GET'])
 def get_projects_for_client(client_address):
-    """
-    Note: Solidity mapping is [freelancer] -> projects.
-    To find projects for a client, we must loop through KNOWN BUILDERS.
-    """
     if not contract: return jsonify([])
     
     try:
         client_addr = Web3.to_checksum_address(client_address)
         found_projects = []
 
-        # Load the list of builders from the JSON file
         known_builders = []
         if os.path.exists("builders.json"):
             with open("builders.json", "r") as f:
                 known_builders = json.load(f)
         
-        # Loop through every builder to see if they did work for this client
         for builder in known_builders:
             builder_addr = Web3.to_checksum_address(builder)
             projects_raw = contract.functions.getAllProjects(builder_addr).call()
 
             for i, p in enumerate(projects_raw):
-                # Check if the project's client matches the requested client
                 if Web3.to_checksum_address(p[0]) == client_addr:
                     found_projects.append({
                         "freelancer": builder,
-                        "index": i, # Needed for review submission
+                        "index": i,
                         "projectName": p[1],
                         "description": p[2],
                         "languages": p[3],
@@ -220,9 +246,6 @@ def get_projects_for_client(client_address):
 # --- SUBMIT REVIEW ---
 @routes.route('/submit_review', methods=['POST'])
 def submit_review():
-    """
-    Expects JSON: { "freelancer": "0x...", "project_index": 0, "rating": 5, "comment_hash": "..." }
-    """
     if not contract: return jsonify({"error": "Contract not loaded"}), 500
 
     try:

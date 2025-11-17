@@ -4,31 +4,176 @@
 
 {% block content %}
 
-<div class="container mx-auto px-6 py-24">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+
+<div class="container  h-screen mx-auto px-6 py-24 overflow-hidden">
     <div class="flex flex-col md:flex-row items-center justify-between gap-12">
 
         <div class="w-full md:w-1/2">
-            <h1 class="text-5xl font-extrabold text-light mb-6">
+            <h1 class="anime-title text-5xl font-extrabold text-light mb-6 opacity-0">
                 Welcome to Cred-Chain!
             </h1>
-            <p class="text-xl text-light-muted mb-10">
+            <p class="anime-text text-xl text-light-muted mb-10 opacity-0">
                 Cred-Chain is the ultimate Web3-powered platform connecting freelancers and employers effortlessly, unlocking decentralized job opportunities.
             </p>
-            <a href="{{url_for('routes.login')}}" class="bg-primary text-light font-bold py-4 px-8 rounded-lg text-lg hover:bg-opacity-90 transition inline-flex items-center space-x-2">
-                <span>Get Started</span>
-                
-                <ion-icon name="arrow-forward-outline" class="h-6 w-6"></ion-icon>
+            
+            <div class="anime-btn opacity-0">
+                <a href="{{url_for('routes.login')}}" class="bg-primary text-light font-bold py-4 px-8 rounded-lg text-lg hover:bg-opacity-90 transition inline-flex items-center space-x-2 shadow-lg hover:shadow-blue-500/50 transform hover:-translate-y-1">
+                    <span>Get Started</span>
+                    <ion-icon name="arrow-forward-outline" class="h-6 w-6"></ion-icon>
+                </a>
+            </div>
 
-            </a>
+            <div class="anime-polkadot mt-12 flex items-center gap-3 opacity-0">
+                <span class="text-sm text-gray-400 uppercase tracking-widest font-semibold">Powered By</span>
+                <div class="flex  items-center anime-polkadot bg-white/10 px-4 py-2 rounded-full border border-white/10 backdrop-blur-sm shadow-inner">
+            
+
+                    <img src="https://cryptologos.cc/logos/polkadot-new-dot-logo.svg?v=029" alt="Polkadot Logo" class="h-6 w-6 mr-2">
+                    <span class="text-white font-bold tracking-wide">Polkadot</span>
+                </div>
+            </div>
         </div>
 
         <div class="w-full md:w-1/2">
-            <div class="bg-light p-8 rounded-2xl shadow-2xl">
-                <img src="{{ url_for('static', filename='images/home.jpg') }}" alt="Freelancer profiles illustration" class="w-full h-auto">
+            <div class="anime-img bg-light p-8 rounded-2xl shadow-2xl opacity-0 transform cursor-pointer">
+                <img src="{{ url_for('static', filename='images/home.jpg') }}" alt="Freelancer profiles illustration" class="w-full h-auto rounded-lg">
             </div>
         </div>
         
     </div>
 </div>
+
+<div id="features-section" class="relative w-full h-screen py-32 bg-gradient-to-b from-primary-dark to-black overflow-hidden">
+    
+    <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+        <div class="absolute -top-20 -left-20 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-0 right-0 w-96 h-96 bg-pink-600/20 rounded-full blur-3xl"></div>
+    </div>
+
+    <div class="container mx-auto px-6 relative z-10">
+        
+        <div class="text-center mb-20">
+            <h2 class="feature-title opacity-0 text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-pink-500 mb-6">
+                Secured by Polkadot. Built for Trust.
+            </h2>
+            <p class="feature-subtitle opacity-0 text-xl text-gray-400 max-w-2xl mx-auto">
+               Cred Chain leverages the interoperability and shared security of the Polkadot ecosystem to bring verifiable reputation to the decentralized web.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+            <div class="feature-card opacity-0 bg-white/5 backdrop-blur-lg border border-white/10 p-8 rounded-2xl hover:border-pink-500/50 transition duration-500 group hover:-translate-y-2">
+                <div class="w-16 h-16 rounded-full bg-pink-500/20 flex items-center justify-center mb-6 group-hover:scale-110 transition duration-300">
+                    <img src="https://cryptologos.cc/logos/polkadot-new-dot-logo.svg?v=029" class="w-8 h-8" alt="Polkadot">
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-4">Polkadot Power</h3>
+                <p class="text-gray-400 leading-relaxed">
+                    Benefit from the shared security and high throughput of the Polkadot relay chain. No gas wars, just seamless hiring.
+                </p>
+            </div>
+
+            <div class="feature-card opacity-0 bg-white/5 backdrop-blur-lg border border-white/10 p-8 rounded-2xl hover:border-blue-500/50 transition duration-500 group hover:-translate-y-2">
+                <div class="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center mb-6 group-hover:scale-110 transition duration-300">
+                    <ion-icon name="shield-checkmark-outline" class="text-3xl text-blue-400"></ion-icon>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-4">Verifiable Work</h3>
+                <p class="text-gray-400 leading-relaxed">
+                    Every project and review is hashed and stored on-chain. Your portfolio is immutable, trustless, and yours forever.
+                </p>
+            </div>
+
+            <div class="feature-card opacity-0 bg-white/5 backdrop-blur-lg border border-white/10 p-8 rounded-2xl hover:border-yellow-500/50 transition duration-500 group hover:-translate-y-2">
+                <div class="w-16 h-16 rounded-full bg-yellow-500/20 flex items-center justify-center mb-6 group-hover:scale-110 transition duration-300">
+                    <ion-icon name="ribbon-outline" class="text-3xl text-yellow-400"></ion-icon>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-4">Skill Badges</h3>
+                <p class="text-gray-400 leading-relaxed">
+                    Earn NFT badges automatically as you complete milestones. Proof of skill that travels with your wallet.
+                </p>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // 1. ENTRANCE ANIMATION TIMELINE
+    var tl = anime.timeline({
+        easing: 'easeOutExpo',
+        duration: 1000
+    });
+
+    tl
+    .add({
+        targets: '.anime-title',
+        translateY: [50, 0],
+        opacity: [0, 1],
+        delay: 200
+    })
+    .add({
+        targets: '.anime-text',
+        translateY: [30, 0],
+        opacity: [0, 1],
+    }, '-=800')
+    .add({
+        targets: '.anime-btn',
+        scale: [0.8, 1],
+        opacity: [0, 1],
+    }, '-=800')
+    .add({
+        targets: '.anime-polkadot',
+        translateX: [-20, 0],
+        opacity: [0, 1],
+    }, '-=800')
+    .add({
+        targets: '.anime-img',
+        translatex: [10, 0],
+        opacity: [0, 1],
+        rotate: ['3deg', '0deg'],
+    }, '-=900');
+
+    // 2. CONTINUOUS FLOATING ANIMATION
+    anime({
+        targets: '.anime-img',
+        translateY: [-10, 10],
+        direction: 'alternate',
+        loop: true,
+        duration: 4000,
+        easing: 'easeInOutSine',
+        delay: 2000
+    });
+
+    // 3. INTERACTIVE HOVER ANIMATION (Scale & Glow)
+    const imgContainer = document.querySelector('.anime-img');
+
+    if(imgContainer) {
+        imgContainer.addEventListener('mouseenter', () => {
+            anime({
+                targets: '.anime-img',
+                scale: 1.05,
+                boxShadow: '0 25px 50px -12px rgba(59, 130, 246, 0.5)', // Blue Glow
+                duration: 500,
+                easing: 'easeOutQuad'
+            });
+        });
+
+        imgContainer.addEventListener('mouseleave', () => {
+            anime({
+                targets: '.anime-img',
+                scale: 1,
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                duration: 500,
+                easing: 'easeOutQuad'
+            });
+        });
+    }
+});
+</script>
+
+<script src="{{ url_for('static', filename='js/home_scroll.js') }}"></script>
 
 {% endblock %}

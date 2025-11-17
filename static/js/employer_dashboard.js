@@ -1,19 +1,34 @@
 // employer_dashboard.js
 const rawAccount = localStorage.getItem('userWalletAddress');
 const account = rawAccount ? rawAccount.toLowerCase() : null;
-let currentReviewData = null; // Stores data for modal
+let currentReviewData = null; 
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     if (!account) {
         alert("Please log in.");
         window.location.href = '/wallet-login';
         return;
     }
     document.getElementById('clientAddr').innerText = account;
-    
-    // Load Data
-    loadEmployerProfile();
-    loadClientProjects();
+    const loader = document.getElementById('global-loader');
+
+    try {
+        // === FETCH DATA IN PARALLEL ===
+        // This ensures the loader stays until BOTH profile and projects are ready
+        await Promise.all([
+            loadEmployerProfile(),
+            loadClientProjects()
+        ]);
+
+    } catch (err) {
+        console.error("Dashboard Init Error:", err);
+    } finally {
+        // === HIDE LOADER ===
+        if (loader) {
+            loader.classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => loader.remove(), 500);
+        }
+    }
 
     // Logout Logic
     document.getElementById('logoutBtn').addEventListener('click', () => {
@@ -26,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /**
- * Fetches the employer's profile details (Name, Company, etc.)
+ * Fetches the employer's profile details
  */
 async function loadEmployerProfile() {
     const nameEl = document.getElementById('emp-name');
@@ -35,7 +50,6 @@ async function loadEmployerProfile() {
     const phoneEl = document.getElementById('emp-phone');
 
     try {
-        // Fetch from your existing endpoint in app.py
         const res = await fetch(`/get_client_profile/${account}`);
         const data = await res.json();
 
@@ -60,7 +74,6 @@ async function loadEmployerProfile() {
 async function loadClientProjects() {
     const container = document.getElementById('client-projects-list');
     try {
-        // Fetch projects assigned to this client
         const res = await fetch(`/get_projects_for_client/${account}`);
         const projects = await res.json();
 
@@ -99,7 +112,7 @@ async function loadClientProjects() {
     }
 }
 
-// === MODAL LOGIC ===
+// === MODAL LOGIC (Unchanged) ===
 
 window.openReviewModal = (freelancer, index) => {
     currentReviewData = { freelancer, index };
@@ -123,7 +136,6 @@ window.submitReview = async () => {
         return;
     }
 
-    // Disable button to prevent double click
     const originalText = btn.innerText;
     btn.innerText = "Submitting...";
     btn.disabled = true;
@@ -146,7 +158,6 @@ window.submitReview = async () => {
         if (data.status === "success") {
             alert("Review Submitted Successfully!\nTx Hash: " + data.tx_hash);
             closeReviewModal();
-            // Clear inputs
             document.getElementById('reviewRating').value = '';
             document.getElementById('reviewComment').value = '';
         } else {

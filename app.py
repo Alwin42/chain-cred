@@ -23,7 +23,7 @@ def home():
 
 @app.route('/')
 def user():
-    return render_template('index.html')
+    return render_template('home.html')
 
 @app.route('/client')
 def clientpage():

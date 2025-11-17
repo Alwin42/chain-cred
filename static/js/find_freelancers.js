@@ -115,9 +115,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="flex gap-2">
                         ${socialButtons}
                     </div>
-                    <button onclick="alert('Full Profile View coming soon!')" class="text-sm text-blue-400 hover:text-blue-300 font-semibold transition">
+                    <a href="/profile/${f.wallet}" class="text-sm bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded font-semibold transition">
                         View Profile
-                    </button>
+                    </a>
                 </div>
             `;
 

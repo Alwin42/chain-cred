@@ -60,8 +60,7 @@
                         Pending Reviews
                     </h2>
                     <div id="client-projects-list" class="space-y-6">
-                        <div class="text-light-muted">Loading projects...</div>
-                    </div>
+                        </div>
                 </div>
             </div>
         </div>
@@ -69,6 +68,10 @@
     </div>
 </div>
 
+<div id="global-loader" class="fixed inset-0 bg-primary-dark z-[100] flex flex-col items-center justify-center transition-opacity duration-500">
+    <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+    <h2 class="text-xl font-bold text-white animate-pulse">Loading Dashboard...</h2>
+</div>
 <div id="reviewModal" class="fixed inset-0 bg-black bg-opacity-80 hidden flex justify-center items-center z-50">
     <div class="bg-primary border border-gray-700 rounded-xl p-8 w-full max-w-md relative">
         <button onclick="closeReviewModal()" class="absolute top-4 right-4 text-white text-2xl hover:text-red-500">&times;</button>

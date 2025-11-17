@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const submitBtn = projectForm.querySelector('button[type="submit"]');
             submitBtn.disabled = true;
-            submitBtn.innerText = "Processing Transaction...";
+            submitBtn.innerText = "Processing...";
 
             const body = {
                 wallet: account,
@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('submitProjectModal').classList.add('hidden');
                     projectForm.reset();
                     
-                    // Reload data
+                    // Reload data & check badges
                     const newProjectCount = await loadDashboardData();
                     checkAndShowBadge(newProjectCount);
 
@@ -125,11 +125,14 @@ async function loadDashboardData() {
     const skillsEl = document.getElementById('profile-skills');
     const socialsEl = document.getElementById('profile-socials');
     const projectsListEl = document.getElementById('projects-list');
+    
+    // The Loader Element
+    const loader = document.getElementById('global-loader');
 
     let projectCount = 0;
 
     try {
-        // PERFORMANCE FIX: Fetch both endpoints in parallel
+        // Fetch parallel
         const [profileRes, projRes] = await Promise.all([
             fetch(`/get_profile/${account}`),
             fetch(`/get_all_projects/${account}`)
@@ -142,7 +145,6 @@ async function loadDashboardData() {
             bioEl.innerText = pdata.bio || "No bio provided.";
             avatarEl.innerText = pdata.name ? pdata.name[0].toUpperCase() : "-";
             
-            // --- Render Skills ---
             if (pdata.skills && pdata.skills.length > 0) {
                 skillsEl.innerHTML = pdata.skills.map(s => 
                     `<span class="bg-primary-dark text-blue-300 text-xs font-semibold px-2 py-1 rounded border border-gray-600">${s}</span>`
@@ -151,7 +153,6 @@ async function loadDashboardData() {
                 skillsEl.innerHTML = '<span class="text-xs text-gray-500 italic">No skills added</span>';
             }
 
-            // --- Render Socials (GitHub / LinkedIn) ---
             let socialsHtml = '';
             if (pdata.github) {
                 socialsHtml += `<a href="${pdata.github}" target="_blank" class="text-gray-400 hover:text-white transition text-2xl"><ion-icon name="logo-github"></ion-icon></a>`;
@@ -160,6 +161,15 @@ async function loadDashboardData() {
                 socialsHtml += `<a href="${pdata.linkedin}" target="_blank" class="text-blue-500 hover:text-blue-400 transition text-2xl"><ion-icon name="logo-linkedin"></ion-icon></a>`;
             }
             socialsEl.innerHTML = socialsHtml;
+
+            if (pdata.email) {
+                document.getElementById('contact-email').classList.remove('hidden');
+                document.getElementById('val-email').innerText = pdata.email;
+            }
+            if (pdata.phone) {
+                document.getElementById('contact-phone').classList.remove('hidden');
+                document.getElementById('val-phone').innerText = pdata.phone;
+            }
 
         } else {
             nameEl.innerText = "Profile Not Found";
@@ -193,6 +203,15 @@ async function loadDashboardData() {
         }
     } catch(err) {
         console.error("Dashboard Load Error:", err);
+    } finally {
+        // === HIDE LOADER ===
+        // This runs after data is fetched (or if error occurs)
+        if(loader) {
+            // Add fade-out classes
+            loader.classList.add('opacity-0', 'pointer-events-none');
+            // Remove from DOM after transition
+            setTimeout(() => loader.remove(), 500);
+        }
     }
 
     return projectCount;

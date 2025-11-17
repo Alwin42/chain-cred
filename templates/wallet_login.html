@@ -3,15 +3,20 @@
 {% block title %}Login | Chain-Cred{% endblock %}
 
 {% block content %}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+
 <div class="min-h-screen bg-primary-dark text-light flex items-center justify-center p-4">
-    <div class="w-full max-w-md bg-primary rounded-2xl shadow-2xl border border-gray-700 p-8 text-center">
+    
+    <div class="anime-card opacity-0 w-full max-w-md bg-primary rounded-2xl shadow-2xl border border-gray-700 p-8 text-center transform translate-y-10">
         
-        <h1 class="text-3xl font-bold mb-2">Login to Chain-Cred</h1>
-        <p class="text-light-muted mb-8">Select your role and connect your wallet.</p>
+        <h1 class="anime-item opacity-0 text-3xl font-bold mb-2">Login to Chain-Cred</h1>
+        
+        <p class="anime-item opacity-0 text-light-muted mb-8">Select your role and connect your wallet.</p>
 
         <div class="flex justify-center gap-8 mb-8">
             
-            <label class="cursor-pointer flex items-center gap-3 group">
+            <label class="anime-radio opacity-0 cursor-pointer flex items-center gap-3 group">
                 <div class="relative flex items-center">
                     <input type="radio" name="role" value="freelancer" class="peer h-5 w-5 cursor-pointer appearance-none rounded-full border border-gray-500 checked:border-blue-500 transition-all" checked>
                     <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-3 w-3 rounded-full bg-blue-500 opacity-0 peer-checked:opacity-100 transition-opacity"></div>
@@ -19,7 +24,7 @@
                 <span class="text-lg text-light-muted group-hover:text-white transition">Freelancer</span>
             </label>
 
-            <label class="cursor-pointer flex items-center gap-3 group">
+            <label class="anime-radio opacity-0 cursor-pointer flex items-center gap-3 group">
                 <div class="relative flex items-center">
                     <input type="radio" name="role" value="employer" class="peer h-5 w-5 cursor-pointer appearance-none rounded-full border border-gray-500 checked:border-blue-500 transition-all">
                     <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-3 w-3 rounded-full bg-blue-500 opacity-0 peer-checked:opacity-100 transition-opacity"></div>
@@ -28,15 +33,18 @@
             </label>
 
         </div>
-        <button id="connectAndLoginBtn" 
-                class="w-full py-3 px-4 rounded-lg bg-blue-600 text-white font-bold text-lg 
-                       shadow-lg hover:bg-blue-500 hover:shadow-blue-500/50 
-                       transform hover:-translate-y-0.5 transition duration-300 ease-in-out">
-            <ion-icon name="wallet-outline" class="text-lg align-middle mr-2"></ion-icon>
-            Connect Wallet & Login
-        </button>
 
-        <p class="text-sm text-light-muted mt-6">
+        <div class="anime-item opacity-0">
+            <button id="connectAndLoginBtn" 
+                    class="w-full py-3 px-4 rounded-lg bg-blue-600 text-white font-bold text-lg 
+                           shadow-lg hover:bg-blue-500 hover:shadow-blue-500/50 
+                           transform hover:-translate-y-0.5 transition duration-300 ease-in-out">
+                <ion-icon name="wallet-outline" class="text-lg align-middle mr-2"></ion-icon>
+                Connect Wallet & Login
+            </button>
+        </div>
+
+        <p class="anime-item opacity-0 text-sm text-light-muted mt-6">
             New here? 
             <a href="{{ url_for('routes.login') }}" class="text-blue-400 hover:underline">
                 Create an account (Sign Up)
@@ -50,29 +58,69 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        
+        // === ANIME.JS ENTRANCE ANIMATION ===
+        var tl = anime.timeline({
+            easing: 'easeOutExpo',
+            duration: 1000
+        });
+
+        tl
+        // 1. The Card slides up
+        .add({
+            targets: '.anime-card',
+            translateY: [50, 0],
+            opacity: [0, 1],
+            duration: 1200
+        })
+        // 2. Title, Text, Button, and Link cascade in
+        .add({
+            targets: '.anime-item',
+            translateY: [20, 0],
+            opacity: [0, 1],
+            delay: anime.stagger(100), // 100ms delay between each item
+        }, '-=800')
+        // 3. Radio buttons pop in from the sides
+        .add({
+            targets: '.anime-radio',
+            translateX: [-20, 0],
+            opacity: [0, 1],
+            delay: anime.stagger(100)
+        }, '-=900');
+
+        // === RADIO CLICK ANIMATION ===
+        const radios = document.querySelectorAll('input[name="role"]');
+        radios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                // Subtle pop effect on the label text when selected
+                anime({
+                    targets: e.target.parentElement.nextElementSibling, // The <span> text
+                    scale: [1, 1.1, 1],
+                    color: ['#E0E0E0', '#FFFFFF'], // Pulse to white
+                    duration: 300,
+                    easing: 'easeOutQuad'
+                });
+            });
+        });
+
+        // === EXISTING LOGIC ===
         const loginButton = document.getElementById('connectAndLoginBtn');
 
         loginButton.addEventListener('click', async () => {
             try {
-                // 1. Check if Web3 module loaded
                 if (!window.connectWallet) {
                     alert("Error: connectWallet function not found. Please refresh.");
                     return;
                 }
 
-                // 2. Trigger Wallet Connection
                 const account = await window.connectWallet();
                 console.log("Wallet connected:", account);
 
-                // 3. Determine Selected Role
                 const selectedRole = document.querySelector('input[name="role"]:checked').value;
 
-                // 4. Save Credentials to Local Storage
-                // This is crucial for app.js to set the correct Nav links (JOBS vs HIRE)
                 localStorage.setItem('userWalletAddress', account);
                 localStorage.setItem('userRole', selectedRole);
 
-                // 5. Redirect based on Role
                 alert(`Login successful as ${selectedRole}! Redirecting...`);
                 
                 if (selectedRole === 'employer') {
