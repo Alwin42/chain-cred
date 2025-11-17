@@ -91,7 +91,10 @@ def hash_project():
     # Generate Hash
     project_hash = hashlib.sha256(content).hexdigest()
     return jsonify({"hash": project_hash})
-
+@routes.route("/profiles.json")
+def send_profiles_json():
+    # Assumes profiles.json is in the root directory
+    return send_from_directory(".", "profiles.json", mimetype='application/json')
 
 # --- GET ALL PROJECTS (Read-Only) ---
 @routes.route('/get_all_projects/<builder>', methods=['GET'])

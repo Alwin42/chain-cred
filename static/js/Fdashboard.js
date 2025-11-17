@@ -1,5 +1,6 @@
 // Fdashboard.js
 const rawAccount = localStorage.getItem('userWalletAddress'); 
+// FIX: Force lowercase to match profiles.json keys
 const account = rawAccount ? rawAccount.toLowerCase() : null;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -9,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return; 
     }
     
-    // Initial Load
+    console.log("Loading dashboard for:", account);
     loadDashboardData();
 
     // Logout Logic
@@ -18,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
         logoutBtn.addEventListener('click', () => {
             if(confirm("Disconnect wallet?")) {
                 localStorage.removeItem('userWalletAddress');
+                localStorage.removeItem('userRole');
                 window.location.href = '/wallet-login';
             }
         });
@@ -42,26 +44,42 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             try {
-                const res = await fetch('/submit_project', {
+                // 1. Hash
+                const hashRes = await fetch('/hash_project', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(body)
+                    body: JSON.stringify({ link: body.link })
                 });
-                const data = await res.json();
+                const hashData = await hashRes.json();
                 
-                if(data.status === "success") {
-                    alert("Project Added Successfully!\nTx Hash: " + data.tx_hash);
-                    document.getElementById('submitProjectModal').classList.add('hidden');
-                    projectForm.reset();
-                    
-                    // Reload data & check badges
-                    const newProjectCount = await loadDashboardData();
-                    checkAndShowBadge(newProjectCount);
+                if (!hashRes.ok || !hashData.hash) throw new Error("Hashing failed");
 
-                } else {
-                    alert("Error: " + data.error);
+                submitBtn.innerText = "Confirm in Wallet...";
+
+                // 2. Sign
+                if (typeof window.addProjectOnChain !== 'function') {
+                    const mod = await import('/static/js/credchain.js');
+                    window.addProjectOnChain = mod.addProjectOnChain;
                 }
+
+                const receipt = await window.addProjectOnChain(
+                    body.client, 
+                    body.name, 
+                    body.description, 
+                    body.languages, 
+                    hashData.hash, 
+                    body.link
+                );
+
+                alert("Project Added! Tx: " + receipt.transactionHash);
+                document.getElementById('submitProjectModal').classList.add('hidden');
+                projectForm.reset();
+                
+                const newCount = await loadDashboardData();
+                checkAndShowBadge(newCount);
+
             } catch(err) {
+                console.error(err);
                 alert("Submission failed: " + err.message);
             } finally {
                 submitBtn.disabled = false;
@@ -93,12 +111,11 @@ function displayBadges(count) {
         if (count >= badge.milestone) {
             badgesHtml += `
                 <div class="flex flex-col items-center group relative">
-                    <div class="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gray-800 border-2 border-yellow-500 flex items-center justify-center overflow-hidden shadow-lg hover:scale-110 transition duration-300 cursor-pointer" title="${badge.label} Badge">
+                    <div class="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gray-800 border-2 border-yellow-500 flex items-center justify-center overflow-hidden shadow-lg hover:scale-110 transition duration-300 cursor-pointer" title="${badge.label}">
                          <img src="/static/images/${badge.file}" alt="${badge.label}" class="w-full h-full object-cover">
                     </div>
                     <span class="text-xs text-yellow-400 mt-2 font-bold">${badge.milestone}+</span>
-                </div>
-            `;
+                </div>`;
         } else {
             badgesHtml += `
                 <div class="flex flex-col items-center opacity-40 grayscale">
@@ -106,16 +123,10 @@ function displayBadges(count) {
                         <ion-icon name="lock-closed" class="text-3xl text-gray-500"></ion-icon>
                     </div>
                     <span class="text-xs text-gray-500 mt-2">${badge.milestone}</span>
-                </div>
-            `;
+                </div>`;
         }
     });
-
-    if (count < 3) {
-        container.innerHTML = `<div class="col-span-4 text-light-muted text-sm text-center italic mb-4">Complete 3 projects to earn your first badge!</div>${badgesHtml}`;
-    } else {
-        container.innerHTML = badgesHtml;
-    }
+    container.innerHTML = (count < 3) ? `<div class="col-span-4 text-light-muted text-sm text-center italic mb-4">Complete 3 projects to earn your first badge!</div>${badgesHtml}` : badgesHtml;
 }
 
 async function loadDashboardData() {
@@ -125,14 +136,10 @@ async function loadDashboardData() {
     const skillsEl = document.getElementById('profile-skills');
     const socialsEl = document.getElementById('profile-socials');
     const projectsListEl = document.getElementById('projects-list');
-    
-    // The Loader Element
     const loader = document.getElementById('global-loader');
-
     let projectCount = 0;
 
     try {
-        // Fetch parallel
         const [profileRes, projRes] = await Promise.all([
             fetch(`/get_profile/${account}`),
             fetch(`/get_all_projects/${account}`)
@@ -141,38 +148,44 @@ async function loadDashboardData() {
         // 1. Handle Profile Data
         if (profileRes.ok) {
             const pdata = await profileRes.json();
+            console.log("Profile loaded:", pdata); // Debugging
+
             nameEl.innerText = pdata.name || "Unnamed";
             bioEl.innerText = pdata.bio || "No bio provided.";
             avatarEl.innerText = pdata.name ? pdata.name[0].toUpperCase() : "-";
             
-            if (pdata.skills && pdata.skills.length > 0) {
-                skillsEl.innerHTML = pdata.skills.map(s => 
+            // Render Skills
+            const skills = Array.isArray(pdata.skills) ? pdata.skills : [];
+            if (skills.length > 0) {
+                skillsEl.innerHTML = skills.map(s => 
                     `<span class="bg-primary-dark text-blue-300 text-xs font-semibold px-2 py-1 rounded border border-gray-600">${s}</span>`
                 ).join('');
             } else {
                 skillsEl.innerHTML = '<span class="text-xs text-gray-500 italic">No skills added</span>';
             }
 
+            // Render Socials
             let socialsHtml = '';
-            if (pdata.github) {
-                socialsHtml += `<a href="${pdata.github}" target="_blank" class="text-gray-400 hover:text-white transition text-2xl"><ion-icon name="logo-github"></ion-icon></a>`;
-            }
-            if (pdata.linkedin) {
-                socialsHtml += `<a href="${pdata.linkedin}" target="_blank" class="text-blue-500 hover:text-blue-400 transition text-2xl"><ion-icon name="logo-linkedin"></ion-icon></a>`;
-            }
+            if (pdata.github) socialsHtml += `<a href="${pdata.github}" target="_blank" class="text-gray-400 hover:text-white transition text-2xl"><ion-icon name="logo-github"></ion-icon></a>`;
+            if (pdata.linkedin) socialsHtml += `<a href="${pdata.linkedin}" target="_blank" class="text-blue-500 hover:text-blue-400 transition text-2xl"><ion-icon name="logo-linkedin"></ion-icon></a>`;
             socialsEl.innerHTML = socialsHtml;
 
-            if (pdata.email) {
-                document.getElementById('contact-email').classList.remove('hidden');
+            // Render Contact Info (Important Fix)
+            const emailEl = document.getElementById('contact-email');
+            const phoneEl = document.getElementById('contact-phone');
+            
+            if (pdata.email && pdata.email.trim() !== "") {
+                emailEl.classList.remove('hidden'); // Show the container
                 document.getElementById('val-email').innerText = pdata.email;
             }
-            if (pdata.phone) {
-                document.getElementById('contact-phone').classList.remove('hidden');
+            if (pdata.phone && pdata.phone.trim() !== "") {
+                phoneEl.classList.remove('hidden'); // Show the container
                 document.getElementById('val-phone').innerText = pdata.phone;
             }
 
         } else {
             nameEl.innerText = "Profile Not Found";
+            bioEl.innerText = "Please click 'Edit My Profile' to set up your details.";
         }
 
         // 2. Handle Projects Data
@@ -180,7 +193,6 @@ async function loadDashboardData() {
             const data = await projRes.json();
             const projects = data.projects || [];
             projectCount = projects.length;
-            
             displayBadges(projectCount);
             
             if(projects.length > 0) {
@@ -193,10 +205,9 @@ async function loadDashboardData() {
                             <span class="text-xs ${p.verified ? 'bg-green-900 text-green-200' : 'bg-yellow-900 text-yellow-200'} px-2 py-1 rounded">
                                 ${p.verified ? "Verified" : "Pending"}
                             </span>
-                            <a href="${p.link}" target="_blank" class="text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded hover:bg-gray-600">View Code</a>
+                            <a href="${p.link}" target="_blank" class="text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded hover:bg-gray-600 flex items-center gap-1"><ion-icon name="link"></ion-icon> Code</a>
                         </div>
-                    </div>
-                `).join('');
+                    </div>`).join('');
             } else {
                 projectsListEl.innerHTML = `<p class="text-light-muted text-center italic">No projects found on-chain.</p>`;
             }
@@ -204,15 +215,10 @@ async function loadDashboardData() {
     } catch(err) {
         console.error("Dashboard Load Error:", err);
     } finally {
-        // === HIDE LOADER ===
-        // This runs after data is fetched (or if error occurs)
         if(loader) {
-            // Add fade-out classes
             loader.classList.add('opacity-0', 'pointer-events-none');
-            // Remove from DOM after transition
             setTimeout(() => loader.remove(), 500);
         }
     }
-
     return projectCount;
 }

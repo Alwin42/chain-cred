@@ -4,19 +4,21 @@ let web3;
 let contract;
 let account;
 
-const CONTRACT_ADDRESS = "0xCCc0F45E8bE87022ea3E553BdD2f64cD6aAeed79"; // Check this matches your latest deployment
-const COMPILED_JSON_PATH = "./static/compiledcccode.json"; 
+// === CONFIGURATION ===
+const CONTRACT_ADDRESS = "0xCCc0F45E8bE87022ea3E553BdD2f64cD6aAeed79"; // Update if you deploy a new contract
+const COMPILED_JSON_PATH = "/static/compiledcccode.json"; 
 
-// ---- helper: load ABI from compiled JSON ----
+// === HELPER: Load ABI ===
 async function loadAbi() {
     try {
-        console.log("[credchain] fetching compiled JSON:", COMPILED_JSON_PATH);
+        console.log("[credchain] Fetching ABI from:", COMPILED_JSON_PATH);
         const resp = await fetch(COMPILED_JSON_PATH);
         if (!resp.ok) throw new Error(`Failed to fetch ABI JSON: ${resp.status}`);
         const compiled = await resp.json();
 
+        // Path to ABI in your specific JSON structure
         const abi = compiled?.contracts?.["chaincred.sol"]?.CredChain?.abi;
-        if (!abi) throw new Error("ABI not found at expected path in compiledcccode.json");
+        if (!abi) throw new Error("ABI not found in compiled JSON");
         return abi;
     } catch (err) {
         console.error("[credchain] loadAbi error:", err);
@@ -24,10 +26,10 @@ async function loadAbi() {
     }
 }
 
-// ---- network switch to Moonbase Alpha ----
+// === HELPER: Switch Network (Moonbase Alpha) ===
 async function switchToMoonbase() {
     const chainIdHex = "0x507"; // 1287
-    if (!window.ethereum) throw new Error("No ethereum provider (MetaMask)");
+    if (!window.ethereum) throw new Error("MetaMask not found");
 
     try {
         await window.ethereum.request({
@@ -35,6 +37,7 @@ async function switchToMoonbase() {
             params: [{ chainId: chainIdHex }]
         });
     } catch (err) {
+        // If chain not added, add it
         if (err.code === 4902) {
             try {
                 await window.ethereum.request({
@@ -48,7 +51,7 @@ async function switchToMoonbase() {
                     }]
                 });
             } catch (addErr) {
-                console.error("[credchain] add chain error:", addErr);
+                console.error("[credchain] Failed to add chain:", addErr);
                 throw addErr;
             }
         } else {
@@ -57,64 +60,72 @@ async function switchToMoonbase() {
     }
 }
 
-// ---- initialize web3 + contract ----
+// === INITIALIZE CONTRACT ===
 async function initContract() {
-    if (!window.ethereum) throw new Error("MetaMask not found");
+    if (!window.ethereum) return;
+    
     if (!web3) {
         web3 = new Web3(window.ethereum);
     }
-    const abi = await loadAbi();
-    contract = new web3.eth.Contract(abi, CONTRACT_ADDRESS);
+    
+    if (!contract) {
+        const abi = await loadAbi();
+        contract = new web3.eth.Contract(abi, CONTRACT_ADDRESS);
+        console.log("[credchain] Contract initialized");
+    }
 }
 
-//----------------------------------------------------------
-// CONNECT WALLET
-//----------------------------------------------------------
+// =================================================================
+// CORE FUNCTIONS
+// =================================================================
+
+/**
+ * Connects the wallet and initializes the contract.
+ */
 export async function connectWallet() {
     if (!window.ethereum) {
-        alert("Install MetaMask!");
+        alert("Please install MetaMask!");
         throw new Error("No ethereum provider");
     }
 
     await switchToMoonbase();
 
     web3 = new Web3(window.ethereum);
-    const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+    const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
     account = accounts[0];
-    console.log("[credchain] wallet connected:", account);
-
+    
+    console.log("[credchain] Connected:", account);
     await initContract();
+    
     return account;
 }
 
-//----------------------------------------------------------
-// HELPER: SEND TRANSACTION
-//----------------------------------------------------------
-async function sendTx(txObject) {
-    if (!account) throw new Error("account not set; call connectWallet() first");
+/**
+ * Helper to send a transaction with gas estimation.
+ */
+async function sendTx(methodCall) {
+    if (!account) await connectWallet();
+    
     try {
-        const gas = await txObject.estimateGas({ from: account });
+        const gas = await methodCall.estimateGas({ from: account });
         const gasPrice = await web3.eth.getGasPrice();
         
-        const receipt = await txObject.send({
+        return await methodCall.send({
             from: account,
-            gas,
-            gasPrice
+            gas: Math.floor(gas * 1.2), // Add 20% buffer
+            gasPrice: gasPrice
         });
-        return receipt;
     } catch (err) {
-        console.error("[credchain] sendTx error:", err);
+        console.error("[credchain] Transaction failed:", err);
         throw err;
     }
 }
 
-//----------------------------------------------------------
-// ADD PROJECT (Called from Fdashboard.js)
-//----------------------------------------------------------
+// --- 1. ADD PROJECT ---
 export async function addProjectOnChain(client, name, desc, lang, projectHash, link) {
-    if (!contract || !account) await connectWallet();
+    if (!contract) await initContract();
 
-    // Match Solidity Struct: ProjectInput
+    // Struct must match Solidity: ProjectInput
     const p = {
         user: account,
         client: client,
@@ -125,64 +136,79 @@ export async function addProjectOnChain(client, name, desc, lang, projectHash, l
         link: link
     };
 
-    console.log("[credchain] Adding project:", p);
+    console.log("[credchain] Adding Project:", p);
     return sendTx(contract.methods.addProject(p));
 }
 
-//----------------------------------------------------------
-// OTHER EXPORTS
-//----------------------------------------------------------
+// --- 2. VERIFY USER ---
 export async function verifyUserOnChain() {
-    if (!contract || !account) await connectWallet();
+    if (!contract) await initContract();
+    console.log("[credchain] Verifying User:", account);
     return sendTx(contract.methods.setUserVerified(account, true));
 }
 
+// --- 3. SUBMIT REVIEW ---
 export async function submitReviewOnChain(freelancer, index, rating, commentHash) {
-    if (!contract || !account) await connectWallet();
+    if (!contract) await initContract();
+    console.log("[credchain] Submitting Review:", { freelancer, index, rating });
     return sendTx(contract.methods.submitReview(freelancer, index, rating, commentHash));
 }
 
-
-//----------------------------------------------------------GET PROJECTS: FREELANCER----------------------------------------------------------
-export async function getAllProjectsFromChain(builder) {
-    if (!contract) await initContract();
+// --- 4. GET ALL PROJECTS (Read-Only) ---
+export async function getAllProjectsFromChain(builderAddress) {
+    if (!contract) await initContract(); // Can init without connecting wallet for read-only if provider exists
 
     try {
-        builder = web3.utils.toChecksumAddress(builder);
+        console.log("[credchain] Fetching projects for:", builderAddress);
+        const projectsRaw = await contract.methods.getAllProjects(builderAddress).call();
 
-        // Get total project count
-        const count = await contract.methods.getProjectCount(builder).call();
-        console.log("Project count:", count);
+        // Format data
+        return projectsRaw.map(p => ({
+            client: p.client || p[0],
+            projectName: p.projectName || p[1],
+            description: p.description || p[2],
+            languages: p.languages || p[3],
+            projectHash: p.projectHash || p[4],
+            link: p.link || p[5],
+            verified: p.verified || p[6],
+            timestamp: p.timestamp || p[7]
+        }));
 
-        let projects = [];
-
-        for (let i = 0; i < count; i++) {
-            const p = await contract.methods.getProject(builder, i).call();
-
-
-            projects.push({
-                client: p[0],
-                projectName: p[1],
-                description: p[2],
-                languages: p[3],
-                projectHash: p[4],
-                link: p[5],
-                verified: p[6]
-            });
-        }
-
-        return projects; // return only array, not wrapped
     } catch (err) {
-        console.error("getAllProjectsFromChain ERROR:", err);
+        console.error("[credchain] Get Projects Error:", err);
         return [];
     }
 }
 
+// --- 5. GET REVIEWS FOR PROJECT (Read-Only) ---
+export async function getProjectReviewsFromChain(builder, index) {
+    if (!contract) await initContract();
 
-// Expose functions to window for use in non-module scripts
+    try {
+        const reviewsRaw = await contract.methods.getProjectReviews(builder, index).call();
+        
+        return reviewsRaw.map(r => ({
+            reviewer: r.reviewer || r[0],
+            projectIndex: r.projectIndex || r[1],
+            rating: r.rating || r[2],
+            commentHash: r.commentHash || r[3]
+        }));
+
+    } catch (err) {
+        console.error("[credchain] Get Reviews Error:", err);
+        return [];
+    }
+}
+
+// =================================================================
+// EXPOSE TO WINDOW (Crucial for non-module scripts)
+// =================================================================
 window.connectWallet = connectWallet;
 window.addProjectOnChain = addProjectOnChain;
 window.verifyUserOnChain = verifyUserOnChain;
 window.submitReviewOnChain = submitReviewOnChain;
 window.getAllProjectsFromChain = getAllProjectsFromChain;
+window.getProjectReviewsFromChain = getProjectReviewsFromChain;
 window.cc_account = () => account;
+
+console.log("[credchain] Module loaded and functions exported to window.");
