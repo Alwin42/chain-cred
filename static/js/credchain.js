@@ -5,7 +5,7 @@ let contract;
 let account;
 
 // === CONFIGURATION ===
-const CONTRACT_ADDRESS = "0xCCc0F45E8bE87022ea3E553BdD2f64cD6aAeed79"; // Update if you deploy a new contract
+const CONTRACT_ADDRESS = "0xCCc0F45E8bE87022ea3E553BdD2f64cD6aAeed79"; 
 const COMPILED_JSON_PATH = "/static/compiledcccode.json"; 
 
 // === HELPER: Load ABI ===
@@ -16,7 +16,6 @@ async function loadAbi() {
         if (!resp.ok) throw new Error(`Failed to fetch ABI JSON: ${resp.status}`);
         const compiled = await resp.json();
 
-        // Path to ABI in your specific JSON structure
         const abi = compiled?.contracts?.["chaincred.sol"]?.CredChain?.abi;
         if (!abi) throw new Error("ABI not found in compiled JSON");
         return abi;
@@ -37,7 +36,6 @@ async function switchToMoonbase() {
             params: [{ chainId: chainIdHex }]
         });
     } catch (err) {
-        // If chain not added, add it
         if (err.code === 4902) {
             try {
                 await window.ethereum.request({
@@ -71,7 +69,6 @@ async function initContract() {
     if (!contract) {
         const abi = await loadAbi();
         contract = new web3.eth.Contract(abi, CONTRACT_ADDRESS);
-        console.log("[credchain] Contract initialized");
     }
 }
 
@@ -104,6 +101,7 @@ export async function connectWallet() {
  * Helper to send a transaction with gas estimation.
  */
 async function sendTx(methodCall) {
+    // Ensure we are connected before sending
     if (!account) await connectWallet();
     
     try {
@@ -123,11 +121,14 @@ async function sendTx(methodCall) {
 
 // --- 1. ADD PROJECT ---
 export async function addProjectOnChain(client, name, desc, lang, projectHash, link) {
-    if (!contract) await initContract();
+    // FIX: Check BOTH contract and account. 
+    // If account is missing, 'user: account' below will be undefined, causing the crash.
+    if (!contract || !account) {
+        await connectWallet();
+    }
 
-    // Struct must match Solidity: ProjectInput
     const p = {
-        user: account,
+        user: account, // This must be a valid address string
         client: client,
         projectName: name,
         description: desc,
@@ -136,33 +137,31 @@ export async function addProjectOnChain(client, name, desc, lang, projectHash, l
         link: link
     };
 
-    console.log("[credchain] Adding Project:", p);
+    console.log("[credchain] Adding Project with struct:", p);
     return sendTx(contract.methods.addProject(p));
 }
 
 // --- 2. VERIFY USER ---
 export async function verifyUserOnChain() {
-    if (!contract) await initContract();
+    if (!contract || !account) await connectWallet();
     console.log("[credchain] Verifying User:", account);
     return sendTx(contract.methods.setUserVerified(account, true));
 }
 
 // --- 3. SUBMIT REVIEW ---
 export async function submitReviewOnChain(freelancer, index, rating, commentHash) {
-    if (!contract) await initContract();
+    if (!contract || !account) await connectWallet();
     console.log("[credchain] Submitting Review:", { freelancer, index, rating });
     return sendTx(contract.methods.submitReview(freelancer, index, rating, commentHash));
 }
 
 // --- 4. GET ALL PROJECTS (Read-Only) ---
 export async function getAllProjectsFromChain(builderAddress) {
-    if (!contract) await initContract(); // Can init without connecting wallet for read-only if provider exists
+    if (!contract) await initContract(); 
 
     try {
-        console.log("[credchain] Fetching projects for:", builderAddress);
         const projectsRaw = await contract.methods.getAllProjects(builderAddress).call();
 
-        // Format data
         return projectsRaw.map(p => ({
             client: p.client || p[0],
             projectName: p.projectName || p[1],
@@ -201,7 +200,7 @@ export async function getProjectReviewsFromChain(builder, index) {
 }
 
 // =================================================================
-// EXPOSE TO WINDOW (Crucial for non-module scripts)
+// EXPOSE TO WINDOW
 // =================================================================
 window.connectWallet = connectWallet;
 window.addProjectOnChain = addProjectOnChain;
@@ -211,4 +210,4 @@ window.getAllProjectsFromChain = getAllProjectsFromChain;
 window.getProjectReviewsFromChain = getProjectReviewsFromChain;
 window.cc_account = () => account;
 
-console.log("[credchain] Module loaded and functions exported to window.");
+console.log("[credchain] Module loaded.");

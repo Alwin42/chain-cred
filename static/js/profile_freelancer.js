@@ -9,14 +9,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     console.log("Loading profile for:", targetWallet);
 
-    // Parallel Fetch for Speed
     try {
-        const [profileRes, projectsRes] = await Promise.all([
-            fetch(`/get_profile/${targetWallet}`),
-            fetch(`/get_all_projects/${targetWallet}`)
-        ]);
-
-        // 1. Render Profile Details
+        // 1. Fetch Profile JSON (Name, Bio - Off Chain)
+        const profileRes = await fetch(`/get_profile/${targetWallet}`);
         if (profileRes.ok) {
             const profile = await profileRes.json();
             renderProfileInfo(profile, targetWallet);
@@ -24,23 +19,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('p-name').innerText = "Profile Not Found";
         }
 
-        // 2. Render Projects & Reviews
-        if (projectsRes.ok) {
-            const data = await projectsRes.json();
-            const projects = data.projects || [];
-            
-            renderBadges(projects.length);
-            await renderProjects(projects, targetWallet);
+        // 2. Fetch Projects (Directly from Blockchain via credchain.js)
+        // We use the window function exposed by credchain.js
+        if (typeof window.getAllProjectsFromChain !== 'function') {
+            // Dynamic import fallback if module isn't ready instantly
+            const mod = await import('/static/js/credchain.js');
+            window.getAllProjectsFromChain = mod.getAllProjectsFromChain;
+            window.getProjectReviewsFromChain = mod.getProjectReviewsFromChain;
         }
+
+        const projects = await window.getAllProjectsFromChain(targetWallet);
+        
+        renderBadges(projects.length);
+        await renderProjects(projects, targetWallet);
 
     } catch (err) {
         console.error("Error loading profile:", err);
+        document.getElementById('p-projects-list').innerHTML = `<p class="text-red-400 text-center">Error loading blockchain data.</p>`;
     }
 });
 
 function renderProfileInfo(profile, wallet) {
     document.getElementById('p-name').innerText = profile.name || "Unnamed";
-    document.getElementById('p-wallet').innerText = wallet;
+    document.getElementById('p-wallet').innerText = wallet.substring(0, 6) + "..." + wallet.substring(wallet.length - 4);
     document.getElementById('p-bio').innerText = profile.bio || "No bio provided.";
     document.getElementById('p-avatar').innerText = profile.name ? profile.name.charAt(0).toUpperCase() : "-";
 
@@ -84,20 +85,17 @@ function renderBadges(count) {
     let html = '';
     milestones.forEach(m => {
         const isUnlocked = count >= m;
-        const opacity = isUnlocked ? 'opacity-100' : 'opacity-30 grayscale';
-        const border = isUnlocked ? 'border-yellow-500' : 'border-gray-600';
         
-        // Assuming you have badge images: badge3.png, badge5.png etc.
-        // If not, we use an Icon fallback
+        // Use actual images if available, else icons
         html += `
-        <div class="flex flex-col items-center ${opacity}">
-            <div class="w-12 h-12 rounded-full bg-gray-800 border-2 ${border} flex items-center justify-center overflow-hidden">
+        <div class="flex flex-col items-center group relative">
+             <div class="w-12 h-12 rounded-full bg-gray-800 border-2 ${isUnlocked ? 'border-yellow-500' : 'border-gray-600'} flex items-center justify-center overflow-hidden shadow-lg">
                  ${isUnlocked ? 
                    `<img src="/static/images/badge${m}.png" class="w-full h-full object-cover">` : 
-                   `<ion-icon name="lock-closed" class="text-gray-500"></ion-icon>`
+                   `<ion-icon name="lock-closed" class="text-gray-500 text-lg"></ion-icon>`
                  }
             </div>
-            <span class="text-[10px] text-gray-400 mt-1">${m}+ Projs</span>
+            <span class="text-[10px] ${isUnlocked ? 'text-yellow-400' : 'text-gray-500'} mt-1">${m}+ Projs</span>
         </div>`;
     });
     container.innerHTML = html;
@@ -107,28 +105,14 @@ async function renderProjects(projects, wallet) {
     const container = document.getElementById('p-projects-list');
     
     if (projects.length === 0) {
-        container.innerHTML = `<div class="text-center text-gray-500 py-10">No projects found on-chain.</div>`;
+        container.innerHTML = `<div class="text-center text-gray-500 py-10">No verified projects found on-chain.</div>`;
         return;
     }
 
-    container.innerHTML = ""; // Clear loading
+    container.innerHTML = ""; 
 
     for (const [index, p] of projects.entries()) {
-        // Fetch Reviews for this specific project
-        // Note: We need a new route in app.py/routes.py for this or we filter client-side
-        // For efficiency, we'll assume we can fetch reviews or they are included.
-        // Here we simulate fetching reviews specifically for this project index.
-        
-        let reviewsHtml = `<div class="text-xs text-gray-500 italic mt-2">No reviews yet.</div>`;
-        
-        try {
-             // You need to create this endpoint in your Python backend to wrap the smart contract call
-             // OR call the smart contract directly here if you import web3/contract
-             // Ideally: const reviews = await getReviewsFromAPI(wallet, index);
-             
-             // For now, let's create the structure waiting for data
-        } catch(e) { console.log(e); }
-
+        // Create Card Container
         const card = document.createElement('div');
         card.className = "bg-primary-dark border border-gray-600 rounded-xl p-6 hover:border-blue-500 transition duration-300";
         
@@ -154,14 +138,14 @@ async function renderProjects(projects, wallet) {
                     <ion-icon name="star" class="text-yellow-500 mr-1"></ion-icon> Reviews
                 </h4>
                 <div id="reviews-${index}" class="space-y-2">
-                    <div class="animate-pulse text-xs text-gray-600">Loading reviews...</div>
+                    <div class="animate-pulse text-xs text-gray-600">Fetching reviews from chain...</div>
                 </div>
             </div>
         `;
         
         container.appendChild(card);
 
-        // Lazy Load Reviews
+        // Fetch Reviews for this specific project from Chain
         loadReviewsForProject(wallet, index, `reviews-${index}`);
     }
 }
@@ -169,10 +153,8 @@ async function renderProjects(projects, wallet) {
 async function loadReviewsForProject(wallet, index, elementId) {
     const container = document.getElementById(elementId);
     try {
-        // This endpoint needs to exist in your backend
-        // It should call contract.getProjectReviews(wallet, index)
-        const res = await fetch(`/get_project_reviews?builder=${wallet}&index=${index}`);
-        const reviews = await res.json();
+        // CALL BLOCKCHAIN DIRECTLY via credchain.js
+        const reviews = await window.getProjectReviewsFromChain(wallet, index);
 
         if (reviews.length === 0) {
             container.innerHTML = `<div class="text-xs text-gray-500 italic">No reviews submitted yet.</div>`;
@@ -182,16 +164,17 @@ async function loadReviewsForProject(wallet, index, elementId) {
         container.innerHTML = reviews.map(r => `
             <div class="bg-gray-800/50 p-3 rounded-lg border border-gray-700">
                 <div class="flex justify-between items-center mb-1">
-                    <span class="text-xs font-mono text-blue-400">${r.reviewer.substring(0,6)}...</span>
+                    <span class="text-xs font-mono text-blue-400" title="${r.reviewer}">Client: ${r.reviewer.substring(0,6)}...</span>
                     <div class="flex text-yellow-500 text-xs">
-                        ${"★".repeat(r.rating)}${"☆".repeat(5-r.rating)}
+                        ${"★".repeat(Number(r.rating))}${"☆".repeat(5-Number(r.rating))}
                     </div>
                 </div>
-                <p class="text-sm text-gray-300">"${r.commentHash}"</p>
+                <p class="text-sm text-gray-300 italic">"${r.commentHash}"</p>
             </div>
         `).join('');
 
     } catch (err) {
+        console.error(`Error loading reviews for project ${index}:`, err);
         container.innerHTML = `<div class="text-xs text-red-400">Failed to load reviews.</div>`;
     }
 }
