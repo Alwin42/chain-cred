@@ -68,76 +68,127 @@ async function loadEmployerProfile() {
 }
 
 /**
- * Fetches projects assigned to this client wallet
+ * Fetches projects AND their reviews from chain
  */
 async function loadClientProjects() {
     const container = document.getElementById('client-projects-list');
+    
     try {
-        // 1. Ensure web3 function is loaded
-        if (typeof window.getAllProjectsFromChain !== 'function') {
-             const mod = await import('/static/js/credchain.js');
-             window.getAllProjectsFromChain = mod.getAllProjectsFromChain;
+        // 1. Ensure web3 functions are loaded
+        if (typeof window.getAllProjectsFromChain !== 'function' || typeof window.getProjectReviewsFromChain !== 'function') {
+            const mod = await import('/static/js/credchain.js');
+            window.getAllProjectsFromChain = mod.getAllProjectsFromChain;
+            window.getProjectReviewsFromChain = mod.getProjectReviewsFromChain;
         }
 
-        // 2. Get list of builders
+        // 2. Get list of all builders
         const buildersRes = await fetch('/builders.json');
-        if (!buildersRes.ok) throw new Error("Could not load builders");
+        if (!buildersRes.ok) throw new Error("Could not load builders list");
         const builders = await buildersRes.json();
 
         // 3. Fetch projects for ALL builders in parallel
-        const promises = builders.map(builderAddr => window.getAllProjectsFromChain(builderAddr));
-        const results = await Promise.all(promises);
+        const projectPromises = builders.map(builderAddr => window.getAllProjectsFromChain(builderAddr));
+        const projectResults = await Promise.all(projectPromises);
 
-        // 4. Filter for MY projects
-        const myProjects = [];
-        results.forEach((builderProjects, i) => {
+        // 4. Filter results: Keep only projects where client == me
+        let myProjects = [];
+        
+        projectResults.forEach((builderProjects, i) => {
             const freelancerAddr = builders[i];
+            
             builderProjects.forEach((p, index) => {
                 if (p.client.toLowerCase() === account) {
                     myProjects.push({
                         ...p,
                         freelancer: freelancerAddr,
-                        index: index 
+                        index: index // Crucial for fetching reviews
                     });
                 }
             });
         });
 
-        // 5. Render
         if (myProjects.length === 0) {
             container.innerHTML = "<p class='text-light-muted italic text-center'>No projects found assigned to this wallet.</p>";
             return;
         }
 
-        container.innerHTML = myProjects.map((p) => `
-            <div class="bg-primary-dark border border-gray-600 rounded-lg p-6 flex flex-col sm:flex-row justify-between items-start gap-4 hover:border-blue-500 transition duration-200">
-                <div class="flex-grow">
-                    <div class="flex justify-between items-center mb-2">
-                        <h4 class="text-lg font-bold text-white">${p.projectName}</h4>
-                        <span class="text-xs ${p.verified ? 'bg-green-900 text-green-200' : 'bg-yellow-900 text-yellow-200'} px-2 py-1 rounded">
-                            ${p.verified ? "Verified" : "Pending"}
-                        </span>
+        // 5. NEW: Fetch Reviews for these specific projects (Parallel)
+        const reviewPromises = myProjects.map(p => window.getProjectReviewsFromChain(p.freelancer, p.index));
+        const reviewsResults = await Promise.all(reviewPromises);
+
+        // Merge reviews into project objects
+        myProjects = myProjects.map((p, i) => ({
+            ...p,
+            reviews: reviewsResults[i]
+        }));
+
+        // 6. Render Projects with Reviews
+        container.innerHTML = myProjects.map((p) => {
+            
+            // Generate HTML for reviews if they exist
+            let reviewsHtml = '';
+            if (p.reviews && p.reviews.length > 0) {
+                reviewsHtml = p.reviews.map(r => `
+                    <div class="bg-gray-800/50 p-3 rounded border border-gray-700 mt-2">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs text-yellow-400 font-bold">Rating: ${r.rating}/5</span>
+                            <span class="text-[10px] text-gray-500 font-mono truncate w-24">${r.reviewer}</span>
+                        </div>
+                        <p class="text-sm text-gray-300 italic">"${r.commentHash}"</p>
                     </div>
-                    <p class="text-light-muted text-sm mb-3">${p.description}</p>
-                    <div class="flex flex-wrap gap-3 text-xs">
-                        <span class="bg-blue-900/30 text-blue-300 px-2 py-1 rounded border border-blue-900">
-                            Developer: ${p.freelancer.substring(0, 6)}...${p.freelancer.substring(p.freelancer.length - 4)}
-                        </span>
-                        <a href="${p.link}" target="_blank" class="bg-gray-800 text-gray-300 px-2 py-1 rounded hover:bg-gray-700 flex items-center gap-1">
-                            <ion-icon name="link"></ion-icon> Source
-                        </a>
+                `).join('');
+            } else {
+                reviewsHtml = `<p class="text-xs text-gray-500 italic mt-2">No reviews submitted yet.</p>`;
+            }
+
+            return `
+            <div class="bg-primary-dark border border-gray-600 rounded-lg p-6 mb-6 hover:border-blue-500 transition duration-200">
+                <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
+                    <div class="flex-grow w-full">
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="text-lg font-bold text-white">${p.projectName}</h4>
+                            <span class="text-xs ${p.verified ? 'bg-green-900 text-green-200' : 'bg-yellow-900 text-yellow-200'} px-2 py-1 rounded">
+                                ${p.verified ? "Verified" : "Pending"}
+                            </span>
+                        </div>
+                        <p class="text-light-muted text-sm mb-3">${p.description}</p>
+                        
+                        <div class="flex flex-wrap gap-3 text-xs mb-4">
+                            <span class="bg-blue-900/30 text-blue-300 px-2 py-1 rounded border border-blue-900">
+                                Developer: ${p.freelancer.substring(0, 6)}...${p.freelancer.substring(p.freelancer.length - 4)}
+                            </span>
+                            <a href="${p.link}" target="_blank" class="bg-gray-800 text-gray-300 px-2 py-1 rounded hover:bg-gray-700 flex items-center gap-1">
+                                <ion-icon name="link"></ion-icon> Source
+                            </a>
+                        </div>
+
+                        <div class="border-t border-gray-700 pt-3">
+                            <h5 class="text-sm font-semibold text-gray-400 mb-2 flex items-center">
+                                <ion-icon name="star-outline" class="mr-1"></ion-icon> Reviews
+                            </h5>
+                            <div class="space-y-2">
+                                ${reviewsHtml}
+                            </div>
+                        </div>
                     </div>
+
+                    ${p.reviews.length === 0 ? `
+                    <button onclick="openReviewModal('${p.freelancer}', ${p.index})" 
+                            class="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg transition transform hover:-translate-y-0.5 whitespace-nowrap">
+                        Add Review
+                    </button>
+                    ` : `
+                    <button class="bg-gray-700 text-gray-400 px-6 py-2 rounded-lg text-sm font-bold cursor-not-allowed opacity-50">
+                        Reviewed
+                    </button>
+                    `}
                 </div>
-                <button onclick="openReviewModal('${p.freelancer}', ${p.index})" 
-                        class="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg transition transform hover:-translate-y-0.5 whitespace-nowrap">
-                    Review
-                </button>
             </div>
-        `).join('');
+        `}).join('');
 
     } catch (err) {
         console.error(err);
-        container.innerHTML = "<p class='text-red-400 text-center'>Failed to load projects.</p>";
+        container.innerHTML = "<p class='text-red-400 text-center'>Failed to sync with blockchain.</p>";
     }
 }
 
@@ -165,18 +216,19 @@ window.submitReview = async () => {
         return;
     }
 
-    // 1. Check if function exists
+    // 1. Load function if missing
     if (typeof window.submitReviewOnChain !== 'function') {
         const mod = await import('/static/js/credchain.js');
         window.submitReviewOnChain = mod.submitReviewOnChain;
     }
 
+    // 2. Disable UI
     const originalText = btn.innerText;
     btn.innerText = "Confirm in Wallet...";
     btn.disabled = true;
 
     try {
-        // 2. Submit to Chain
+        // 3. Send Transaction via MetaMask
         const receipt = await window.submitReviewOnChain(
             currentReviewData.freelancer,
             currentReviewData.index,
@@ -184,12 +236,13 @@ window.submitReview = async () => {
             comment
         );
 
+        // 4. Success
         alert("Review Submitted Successfully!\nTx Hash: " + receipt.transactionHash);
         closeReviewModal();
         document.getElementById('reviewRating').value = '';
         document.getElementById('reviewComment').value = '';
         
-        // Refresh the list
+        // Refresh the list to show the new review
         loadClientProjects();
 
     } catch (err) {
